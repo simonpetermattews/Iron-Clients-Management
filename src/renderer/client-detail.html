@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dettaglio Cliente</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+    <style>
+      body { font-family: system-ui, Arial, sans-serif; margin: 16px; }
+      h1 { margin-bottom: 8px; }
+      .muted { color: #666; }
+      .card { border: 1px solid #ddd; padding: 12px; border-radius: 6px; margin-bottom: 8px; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .toolbar { margin: 16px 0; }
+
+      /* Modal */
+      .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; padding: 16px; }
+      .modal.show { display: flex; }
+      .modal-content { background: #fff; width: min(900px, 100%); max-height: 90vh; overflow: auto; border-radius: 8px; padding: 16px; position: relative; }
+      .modal-close { position: absolute; top: 8px; right: 8px; border: none; background: transparent; font-size: 22px; cursor: pointer; }
+      form { display: grid; gap: 8px; }
+      textarea { min-height: 100px; }
+      ul { padding-left: 18px; }
+      body.no-scroll { overflow: hidden; }
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .section-title { grid-column: 1 / -1; margin: 12px 0 6px; }
+      label { display: grid; gap: 4px; }
+      input[type="number"], input[type="text"], textarea { padding: 6px; }
+      button { padding: 6px 10px; cursor: pointer; }
+      .card-title { display:flex; justify-content:space-between; align-items:center; font-weight:600; margin-bottom:8px; }
+      .card-section-title { font-weight:600; margin:10px 0 6px; color:#444; }
+      .kv-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap: 6px 12px; }
+      .kv .k { color:#555; font-size:12px; }
+      .kv .v { font-size:14px; }
+      @media (max-width: 640px) { .kv-grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <a id="back-btn" href="#" class="muted">← Torna all’elenco</a>
+    <h1 id="client-name">Cliente</h1>
+    <div class="muted" id="client-meta"></div>
+
+    <div class="toolbar">
+      <button id="new-training-btn" type="button">Nuova Scheda</button>
+    </div>
+
+    <!-- Modal con il form -->
+    <div id="training-modal" class="modal" aria-hidden="true">
+      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <button id="training-modal-close" class="modal-close" aria-label="Chiudi">×</button>
+        <h2 id="modal-title">Nuova scheda allenamento</h2>
+
+        <form id="training-form" class="grid-2">
+          <h3 class="section-title">Dati Anagrafici</h3>
+          <label>Altezza<input type="number" name="altezza" /></label>
+          <label>Peso<input type="number" name="peso" /></label>
+
+          <h3 class="section-title">Circonferenze</h3>
+          <label>Circonferenza Torace (cm)<input type="number" name="circonferenza_torace" /></label>
+          <label>Circonferenza Vita (cm)<input type="number" name="circonferenza_vita" /></label>
+          <label>Circonferenza Ombelicale (cm)<input type="number" name="circonferenza_ombelicale" /></label>
+          <label>Circonferenza Fianchi (cm)<input type="number" name="circonferenza_fianchi" /></label>
+          <label>Circonferenza Braccio Dx (cm)<input type="number" name="circonferenza_braccio_dx" /></label>
+          <label>Circonferenza Braccio Sx (cm)<input type="number" name="circonferenza_braccio_sx" /></label>
+          <label>Circonferenza Gamba Dx (cm)<input type="number" name="circonferenza_gamba_dx" /></label>
+          <label>Circonferenza Gamba Sx (cm)<input type="number" name="circonferenza_gamba_sx" /></label>
+
+          <h3 class="section-title">Stile di vita</h3>
+          <label>Idratazione (lt)<input type="number" name="idratazione" /></label>
+          <label>Ore di sonno<input type="number" name="ore_di_sonno" /></label>
+          <label>Alimentazione <textarea name="alimentazione"></textarea></label>
+          <label>Obiettivo<textarea name="obiettivo"></textarea></label>
+          <label>Frequenza Allenamento<input type="text" name="frequenza_allenamento" /></label>
+
+          <h3 class="section-title">Test Fisici</h3>
+          <label>Sit and Reach<input type="number" name="sit_and_reach" required /></label>
+          <label>Side Bend<input type="number" name="side_bend" required /></label>
+          <label>Flessibilità spalla<input type="number" name="flessibilita_spalla" required /></label>
+          <label>Flamingo Dx<input type="number" name="flamingo_dx" required /></label>
+          <label>Flamingo Sx<input type="number" name="flamingo_sx" required /></label>
+          <label>Piegamenti Braccia<input type="number" name="piegamenti_braccia" required /></label>
+          <label>Squat<input type="number" name="squat" required /></label>
+          <label>Sit Up<input type="number" name="sit_up" required /></label>
+          <label>Trazioni<input type="number" name="trazioni" required /></label>
+
+          <div class="section-title" style="display:flex; gap: 8px; justify-content: flex-end;">
+            <button type="button" id="cancel-training-btn">Annulla</button>
+            <button type="submit">Salva scheda</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <h2>Schede salvate</h2>
+    <div id="trainings-list"></div>
+
+    <script src="./client-detail.js"></script>
+  </body>
+</html>

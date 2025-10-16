@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build outputs / installers
+dist/
+out/
+build/
+release/
+*.asar
+*.nupkg
+*.msi
+*.dmg
+*.AppImage
+*.zip
+*.tar.gz
+*.exe
+
+# Logs and temp
+*.log
+*.pid
+.DS_Store
+
+# Tests
+coverage/
+.tmp/

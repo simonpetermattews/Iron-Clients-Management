@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Foto Cliente</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .photos-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 16px; }
+    .gallery img { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; }
+    .empty { color: #666; padding: 24px 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="photos-header">
+      <h2 id="client-title">Foto cliente</h2>
+      <div style="display:flex; gap:8px;">
+        <button id="open-folder-btn" class="secondary" type="button">Apri cartella</button>
+        <button id="upload-btn" class="primary" type="button">Carica foto</button>
+      </div>
+    </div>
+    <div id="gallery" class="gallery"></div>
+    <p id="empty-msg" class="empty" hidden>Nessuna foto presente.</p>
+  </main>
+  <script src="photos.js"></script>
+</body>
+</html>

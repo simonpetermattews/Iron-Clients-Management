@@ -1,0 +1,92 @@
+{
+  "name": "client-management-electron",
+  "version": "1.0.0",
+  "description": "A client management application built with Electron.",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "test": "jest",
+    "build": "electron-builder",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "keywords": [
+    "electron",
+    "client management",
+    "CRUD"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "bootstrap": "^5.3.8",
+    "electron-squirrel-startup": "^1.0.1"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.10.2",
+    "@electron-forge/maker-deb": "^7.10.2",
+    "@electron-forge/maker-rpm": "^7.10.2",
+    "@electron-forge/maker-squirrel": "^7.10.2",
+    "@electron-forge/maker-zip": "^7.10.2",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.10.2",
+    "@electron-forge/plugin-fuses": "^7.10.2",
+    "@electron/fuses": "^1.8.0",
+    "electron": "^38.2.2",
+    "electron-rebuild": "^3.2.9",
+    "jest": "^29.0.0"
+  },
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "asar": { "unpack": "**/*.node" },
+        "extraResource": [ "assets" ]
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "client_management_electron"
+          }
+        }
+      ]
+    }
+  },
+  "build": {
+    "appId": "com.iron.clientmanagement",
+    "productName": "IRON Clients Management",
+    "files": [
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "asarUnpack": [
+      "**/*.node",
+      "node_modules/better-sqlite3/**"
+    ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
+    "publish": [
+      "github"
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+appId: com.example.clientmanagement
+productName: Client Management
+files:
+  - src/**/* 
+  - !**/*.map
+  - !**/*.test.js
+  - !**/*.spec.js
+  - !**/node_modules/**
+  - !**/build/**
+  - !**/dist/**
+  - !**/.gitignore
+  - !**/README.md
+  - !**/electron-builder.yml
+  - !**/package.json
+  - !**/yarn.lock
+mac:
+  category: public.app-category.business
+  target:
+    - dmg
+    - pkg
+win:
+  target:
+    - nsis
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Office
+  icon: src/assets/icon.png
+  desktop:
+    Name: Client Management
+    Comment: Manage your clients efficiently
+    Exec: client-management-electron
+    Icon: src/assets/icon.png
+    Type: Application
+    StartupNotify: true
+    Categories: Office;Productivity;
