@@ -1,4 +1,4 @@
-:root{
+:root {
     --dark: #170312;
     --brand: #4A8FE7;
     --accent: #F26419;
@@ -13,9 +13,13 @@ body {
     padding: 0;
     background-color: var(--bg);
     color: var(--text);
+    justify-content: center;
+    align-items: center
 }
 
-body.no-scroll { overflow: hidden; }
+body.no-scroll {
+    overflow: hidden;
+}
 
 header {
     background: var(--bg);
@@ -30,9 +34,61 @@ header {
     top: 0;
 }
 
-h1 {
-    margin: 0;
+
+.box {
+    display: flex;
 }
+
+.box .inner {
+    width: 400px;
+    height: 200px;
+    line-height: 200px;
+    font-size: 4em;
+    font-family: sans-serif;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.box .inner:first-child {
+    border: 10px solid #131313;
+    box-shadow: #F26419 inset 0px 0px 10px, #F26419 inset 0px 0px 30px, #F26419 inset 0px 0px 50px;
+    color: darkred;
+    transform-origin: right;
+    transform: perspective(100px) rotateY(-15deg);
+}
+
+.box .inner:last-child {
+    border: 10px solid black;
+    box-shadow: #F26419 inset 0px 0px 10px, #F26419 inset 0px 0px 30px, #F26419 inset 0px 0px 50px;
+    color: antiquewhite;
+    transform-origin: left;
+    transform: perspective(100px) rotateY(15deg);
+}
+
+.box .inner span {
+    position: absolute;
+    animation: marquee 5s linear infinite;
+    transform: translate(0px -50px);
+
+}
+
+.box .inner:first-child span {
+    animation-delay: 2.5s;
+    left: -100%;
+}
+
+img, svg {
+    vertical-align: none !important;
+}
+
+.logo-iron {
+    height: 70px;
+    margin-left: 1rem;
+    filter: brightness(0) saturate(100%) invert(38%) sepia(87%) saturate(1229%) hue-rotate(354deg) brightness(100%) contrast(91%) drop-shadow(-1px -1px 0px #121212) drop-shadow(2px -1px 0px #121212) drop-shadow(2px 2px 0px #121212) drop-shadow(-1px 2px 0px #121212);
+
+}
+
 
 .container {
     width: 80%;
@@ -62,7 +118,7 @@ form select {
     margin: 10px 0;
     border: 1px solid #ccc;
     border-radius: 4px;
-    
+
 }
 
 form input[type="submit"] {
@@ -110,50 +166,69 @@ form input[type="submit"]:hover {
 }
 
 .modal {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  background: rgba(0,0,0,0.5);
-  z-index: 1000;
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
 }
-.modal.show { display: flex; }
+
+.modal.show {
+    display: flex;
+}
 
 .modal-content {
-  width: 100%;
-  max-width: 640px;
-  max-height: 90vh;
-  overflow: auto;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 640px;
+    max-height: 90vh;
+    overflow: auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .5rem;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #eee;
 }
 
 .icon-btn {
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
 }
 
 button.primary {
-  padding: .5rem .9rem;
-  border: none;
-  border-radius: 6px;
-  background: #2563eb;
-  color: #fff;
-  cursor: pointer;
+    padding: .5rem .9rem;
+    border: none;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #fff;
+    cursor: pointer;
 }
-button.primary:hover { background: #1d4ed8; }
+
+button.primary:hover {
+    background: #1d4ed8;
+}
+
+
+
+
+@keyframes marquee {
+    from {
+        left: 100%;
+    }
+
+    to {
+        left: -100%;
+    }
+}
