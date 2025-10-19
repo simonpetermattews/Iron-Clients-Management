@@ -20,4 +20,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // Apertura finestra Foto dal renderer principale
   openPhotosWindow: (clientName) => ipcRenderer.send('photos:open', { clientName }),
+
+  // Backup database
+  backupDatabaseManual: () => ipcRenderer.invoke('db:backup:manual'),
 });

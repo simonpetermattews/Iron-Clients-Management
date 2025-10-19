@@ -1,7 +1,7 @@
 {
-  "name": "client-management-electron",
+  "name": "IRON Management",
   "version": "1.0.0",
-  "description": "A client management application built with Electron.",
+  "description": "A client management application built with TOOOOOOP",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron-forge start",
@@ -39,13 +39,15 @@
     "forge": {
       "packagerConfig": {
         "asar": { "unpack": "**/*.node" },
-        "extraResource": [ "assets" ]
+        "extraResource": [ "assets" ],
+        "executableName": "client-management-electron"
       },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "client_management_electron"
+            "name": "client-management-electron",
+            "shortcutName": "IRON Clients Management"
           }
         }
       ]

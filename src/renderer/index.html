@@ -65,10 +65,30 @@
                     </table>
                 </div>
             </section>
+            <button id="backup-btn" class="btn btn-secondary">Backup DB</button>
         </article>
     </main>
     <script defer src="../../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="renderer.js"></script>
+    <script>
+        const backupBtn = document.getElementById('backup-btn');
+        backupBtn?.addEventListener('click', async () => {
+            backupBtn.disabled = true;
+            try {
+                const file = await window.api.backupDatabaseManual();
+                if (file) {
+                    alert(`Backup salvato in:\n${file}`);
+                } else {
+                    // utente ha annullato
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Errore durante il backup.');
+            } finally {
+                backupBtn.disabled = false;
+            }
+        });
+    </script>
 </body>
 
 </html>

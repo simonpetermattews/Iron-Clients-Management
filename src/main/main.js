@@ -1,12 +1,17 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
+
+try {
+    if (require('electron-squirrel-startup')) app.quit();
+} catch { }
+
 // Log errori silenziosi
 process.on('uncaughtException', (err) => console.error('[Main] UncaughtException:', err));
 process.on('unhandledRejection', (r) => console.error('[Main] UnhandledRejection:', r));
 
 // Registra i canali IPC e DB
-require('./ipc-training');
+const training = require('./ipc-training');
 
 let mainWindow;
 
@@ -33,17 +38,45 @@ function createMainWindow() {
         mainWindow.show();
     });
 
-    mainWindow.on('closed', () => (mainWindow = null));
+    mainWindow.on('closed', () => {
+        mainWindow = null;
+    });
+
 }
 
-app.whenReady().then(() => {
-    console.log('[Main] app ready');
-    createMainWindow();
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+    app.quit();
+} else {
+    app.on('second-instance', () => {
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+        } else {
+            createMainWindow();
+        }
     });
-});
 
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
-});
+    app.whenReady().then(() => {
+        console.log('[Main] app ready');
+        app.setAppUserModelId('com.iron.clientmanagement');
+        // Backup giornaliero al bootstrap
+        training.backupDatabaseDaily && training.backupDatabaseDaily();
+        createMainWindow();
+        app.on('activate', () => {
+            if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
+        });
+    });
+
+    app.on('before-quit', () => {
+        // Prova backup veloce e chiudi DB
+        try { training.backupDatabaseAuto && training.backupDatabaseAuto(); } catch {}
+        try { training.closeDb && training.closeDb(); } catch {}
+    });
+
+
+    app.on('window-all-closed', () => {
+        if (process.platform !== 'darwin') app.quit();
+    });
+}

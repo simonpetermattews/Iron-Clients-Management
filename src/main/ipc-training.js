@@ -47,16 +47,49 @@ try {
   throw err;
 }
 
-// Ensure schema
-db.exec(`
-CREATE TABLE IF NOT EXISTS clients (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  surname TEXT,
-  phone TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-`);
+// Ensure schema (clients + training_plans con migrazione colonne)
+function ensureSchema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS clients (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      surname TEXT,
+      phone TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS training_plans (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      notes TEXT,
+      date TEXT,
+      exercises TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_training_client ON training_plans(client_id);
+    CREATE INDEX IF NOT EXISTS idx_training_created_at ON training_plans(created_at DESC);
+  `);
+
+  // Migrazione: aggiungi eventuali colonne opzionali mancanti
+  const existing = new Set(db.prepare(`PRAGMA table_info(training_plans)`).all().map(r => r.name));
+  const optionalCols = [
+    'Altezza','Peso',
+    'CirconferenzaTorace','CirconferenzaVita','CirconferenzaOmbelicale','CirconferenzaFianchi',
+    'CirconferenzaBraccioDx','CirconferenzaBraccioSx','CirconferenzaGambaDx','CirconferenzaGambaSx',
+    'Idratazione','OreDiSonno','Alimentazione','Obbiettivo','FrequenzaAllenamento',
+    'SitAndReach','SideBend','FlessibilitaSpalla','FlamingoDx','FlamingoSx',
+    'PiegamentiBraccia','Squat','SitUp','Trazioni'
+  ];
+  for (const col of optionalCols) {
+    if (!existing.has(col)) {
+      db.exec(`ALTER TABLE training_plans ADD COLUMN ${col} TEXT`);
+    }
+  }
+}
+ensureSchema();
 
 // Example exports (adatta se già presenti)
 function insertClient(client) {
@@ -88,7 +121,75 @@ function deleteClient(id) {
   return info.changes > 0;
 }
 
-module.exports = { insertClient, getClient, listClients, updateClient, deleteClient, db };
+const backupsDir = path.join(userDataPath, 'backups');
+fs.mkdirSync(backupsDir, { recursive: true });
+
+function ts() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+}
+
+async function backupDatabase(toFilePath) {
+  // Snapshot consistente, anche con WAL attivo
+  await db.backup(toFilePath);
+  return toFilePath;
+}
+
+async function rotateBackups(dir, keep = 10) {
+  const files = fs.readdirSync(dir)
+    .filter(f => f.toLowerCase().endsWith('.db'))
+    .map(f => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
+    .sort((a, b) => b.t - a.t);
+  for (let i = keep; i < files.length; i++) {
+    try { fs.unlinkSync(path.join(dir, files[i].f)); } catch {}
+  }
+}
+
+async function backupDatabaseAuto() {
+  const target = path.join(backupsDir, `clients-${ts()}.db`);
+  await backupDatabase(target);
+  await rotateBackups(backupsDir, 10);
+  return target;
+}
+
+// Backup giornaliero (una volta al giorno)
+const metaPath = path.join(backupsDir, 'meta.json');
+async function backupDatabaseDaily() {
+  try {
+    const meta = fs.existsSync(metaPath) ? JSON.parse(fs.readFileSync(metaPath, 'utf8')) : {};
+    const last = meta.lastBackup || 0;
+    const dayMs = 24 * 60 * 60 * 1000;
+    if (Date.now() - last > dayMs) {
+      const file = await backupDatabaseAuto();
+      fs.writeFileSync(metaPath, JSON.stringify({ lastBackup: Date.now(), lastFile: file }, null, 2));
+      console.log('[DB] Daily backup ->', file);
+    }
+  } catch (e) {
+    console.error('[DB] Daily backup error:', e);
+  }
+}
+
+// IPC: backup manuale (scegli percorso)
+ipcMain.handle('db:backup:manual', async () => {
+  const { canceled, filePath } = await dialog.showSaveDialog({
+    title: 'Salva backup database',
+    defaultPath: path.join(app.getPath('documents'), `IRON-Clients-backup-${ts()}.db`),
+    filters: [{ name: 'SQLite DB', extensions: ['db', 'sqlite'] }]
+  });
+  if (canceled || !filePath) return null;
+  await backupDatabase(filePath);
+  return filePath;
+});
+
+module.exports = {
+  // ...existing exports...
+  insertClient, getClient, listClients, updateClient, deleteClient,
+  db,
+  closeDb: () => { try { db.close(); } catch {} },
+  backupDatabaseAuto,
+  backupDatabaseDaily
+};
 
 // ------- IPC CLIENT CRUD -------
 
