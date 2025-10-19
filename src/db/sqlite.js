@@ -8,6 +8,9 @@ fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
 const db = new Database(dbPath);
 
+// Abilita FK (opzionale ma consigliato)
+db.pragma('foreign_keys = ON');
+
 // Creazione tabelle (idempotente)
 db.exec(`
 CREATE TABLE IF NOT EXISTS clients (
@@ -17,7 +20,20 @@ CREATE TABLE IF NOT EXISTS clients (
   phone TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS training_plans (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  notes TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME,
+  FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+);
 `);
+
+console.log('[DB] Path:', dbPath);
+console.log('[DB] Tables:', db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all());
 
 // Esempi funzioni
 function insertClient(client) {

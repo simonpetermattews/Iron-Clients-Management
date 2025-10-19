@@ -47,16 +47,55 @@ try {
   throw err;
 }
 
-// Ensure schema
-db.exec(`
-CREATE TABLE IF NOT EXISTS clients (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  surname TEXT,
-  phone TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-`);
+// Ensure schema (clients + training_plans con migrazione colonne)
+function ensureSchema(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS clients (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      surname TEXT,
+      phone TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS training_plans (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      notes TEXT,
+      date TEXT,
+      exercises TEXT,
+      Altezza REAL, Peso REAL,
+      CirconferenzaTorace REAL, CirconferenzaVita REAL, CirconferenzaOmbelicale REAL, CirconferenzaFianchi REAL,
+      CirconferenzaBraccioDx REAL, CirconferenzaBraccioSx REAL, CirconferenzaGambaDx REAL, CirconferenzaGambaSx REAL,
+      Idratazione REAL, OreDiSonno REAL, Alimentazione TEXT, Obbiettivo TEXT, FrequenzaAllenamento TEXT,
+      SitAndReach REAL, SideBend REAL, FlessibilitaSpalla REAL, FlamingoDx REAL, FlamingoSx REAL,
+      PiegamentiBraccia INTEGER, Squat INTEGER, SitUp INTEGER, Trazioni INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME,
+      FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_training_plans_client_id ON training_plans(client_id);
+  `);
+
+  // Migrazione colonne mancanti (se DB già esiste)
+  const colTypes = new Map([
+    ['client_id','INTEGER'], ['title','TEXT'], ['notes','TEXT'], ['date','TEXT'], ['exercises','TEXT'],
+    ['Altezza','REAL'], ['Peso','REAL'],
+    ['CirconferenzaTorace','REAL'], ['CirconferenzaVita','REAL'], ['CirconferenzaOmbelicale','REAL'], ['CirconferenzaFianchi','REAL'],
+    ['CirconferenzaBraccioDx','REAL'], ['CirconferenzaBraccioSx','REAL'], ['CirconferenzaGambaDx','REAL'], ['CirconferenzaGambaSx','REAL'],
+    ['Idratazione','REAL'], ['OreDiSonno','REAL'], ['Alimentazione','TEXT'], ['Obbiettivo','TEXT'], ['FrequenzaAllenamento','TEXT'],
+    ['SitAndReach','REAL'], ['SideBend','REAL'], ['FlessibilitaSpalla','REAL'], ['FlamingoDx','REAL'], ['FlamingoSx','REAL'],
+    ['PiegamentiBraccia','INTEGER'], ['Squat','INTEGER'], ['SitUp','INTEGER'], ['Trazioni','INTEGER'],
+    ['created_at','DATETIME'], ['updated_at','DATETIME'],
+  ]);
+  const existing = new Set(db.prepare("PRAGMA table_info('training_plans')").all().map(r => r.name));
+  for (const [col, type] of colTypes) {
+    if (!existing.has(col)) {
+      db.exec(`ALTER TABLE training_plans ADD COLUMN ${col} ${type}`);
+    }
+  }
+}
+ensureSchema(db);
 
 // Example exports (adatta se già presenti)
 function insertClient(client) {
@@ -266,65 +305,23 @@ ipcMain.on('training:update', (event, payload = {}) => {
     vals.push(id);
     const info = db.prepare(`UPDATE training_plans SET ${sets.join(',')} WHERE id=?`).run(...vals);
     if (info.changes === 0) throw new Error('Scheda non trovata');
+
     event.sender.send('training:update:success');
   } catch (err) {
     event.sender.send('training:update:error', err.message || 'Errore aggiornamento scheda');
   }
 });
 
-ipcMain.on('training:delete', (event, { id }) => {
+ipcMain.on('training:delete', (event, payload = {}) => {
   try {
-    const info = db.prepare('DELETE FROM training_plans WHERE id=?').run(Number(id));
+    const id = Number(payload.id);
+    if (!id) throw new Error('ID mancante');
+
+    const info = db.prepare('DELETE FROM training_plans WHERE id=?').run(id);
     if (info.changes === 0) throw new Error('Scheda non trovata');
+
     event.sender.send('training:delete:success');
   } catch (err) {
     event.sender.send('training:delete:error', err.message || 'Errore eliminazione scheda');
   }
-});
-
-// ---- Foto: filesystem handlers usati da photos.js ----
-function safeFolderName(name) {
-  return String(name || 'Cliente').replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').slice(0, 80);
-}
-function clientPhotosDir(name) {
-  return path.join(app.getPath('userData'), 'photos', safeFolderName(name));
-}
-
-ipcMain.handle('get-client-photos', async (_e, name) => {
-  const dir = clientPhotosDir(name);
-  if (!fs.existsSync(dir)) return [];
-  const exts = new Set(['.png','.jpg','.jpeg','.gif','.webp','.bmp']);
-  const files = fs.readdirSync(dir)
-    .filter(f => exts.has(path.extname(f).toLowerCase()))
-    .map(f => pathToFileURL(path.join(dir, f)).href);
-  return files;
-});
-
-ipcMain.handle('upload-client-photos', async (_e, name) => {
-  const dir = clientPhotosDir(name);
-  fs.mkdirSync(dir, { recursive: true });
-  const { canceled, filePaths } = await dialog.showOpenDialog({
-    title: 'Seleziona foto',
-    properties: ['openFile', 'multiSelections'],
-    filters: [{ name: 'Immagini', extensions: ['png','jpg','jpeg','gif','webp','bmp'] }]
-  });
-  if (canceled || !filePaths?.length) return [];
-  for (const src of filePaths) {
-    const dst = path.join(dir, path.basename(src));
-    fs.copyFileSync(src, dst);
-  }
-  return true;
-});
-
-ipcMain.handle('open-client-photos-folder', async (_e, name) => {
-  const dir = clientPhotosDir(name);
-  fs.mkdirSync(dir, { recursive: true });
-  await shell.openPath(dir);
-  return true;
-});
-
-ipcMain.handle('open-client-photo', async (_e, fileUrl) => {
-  if (!fileUrl) return false;
-  await shell.openExternal(fileUrl);
-  return true;
 });
