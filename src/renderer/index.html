@@ -9,6 +9,8 @@
             content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'">
         <link rel="stylesheet"
             href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+        <link rel="stylesheet"
+            href="../../node_modules/bootstrap-icons/font/bootstrap-icons.min.css" />
         <link rel="stylesheet" href="styles.css">
     </head>
 
@@ -17,13 +19,17 @@
         <header>
             <article class="container">
                 <section class="row justify-content-center">
-                    <div class="col-12 py-2">
+                    <div class="col-12 py-2 d-flex justify-content-center">
                         <div class="box">
                             <div class="inner">
-                                <span><img class="logo-iron" src="./images/IRON-7-_1_.svg" alt=""></span>
+                                <span><img class="logo-iron"
+                                        src="./images/IRON-7-_1_.svg"
+                                        alt></span>
                             </div>
                             <div class="inner">
-                                <span><img class="logo-iron" src="./images/IRON-7-_1_.svg" alt=""></span>
+                                <span><img class="logo-iron"
+                                        src="./images/IRON-7-_1_.svg"
+                                        alt></span>
                             </div>
                         </div>
                     </div>
@@ -55,20 +61,19 @@
             <!-- Sezione lista clienti invariata -->
             <article class="container">
                 <section id="client-list"
-                    class="row my-5 justify-content-center align-items-center">
-                    <div class="col-5 d-flex justify-content-center">
-                        <h2>Clienti</h2>
-                    </div>
-                    <div class="col-5 d-flex justify-content-center">
+                    class="row my-5 justify-content-center align-items-center mb-5">
+                    <div
+                        class="col-12 d-flex justify-content-center align-items-center">
                         <button id="open-modal-btn" class="primary">Nuovo
                             cliente</button>
                     </div>
                 </section>
                 <section class="row justify-content-center">
                     <div class="col-12">
-                        <table id="clients-table" class="table table-striped">
+                        <table id="clients-table"
+                            class="table table-striped table-dark table-hover">
                             <thead>
-                                <tr>
+                                <tr class="tr-title">
                                     <th>Nome</th>
                                     <th>Cognome</th>
                                     <th>Telefono</th>
@@ -76,7 +81,8 @@
                                     <th>Foto</th>
                                 </tr>
                             </thead>
-                            <tbody id="clients-tbody"></tbody>
+                            <tbody id="clients-tbody"
+                                class="table-body"></tbody>
                         </table>
                     </div>
                 </section>

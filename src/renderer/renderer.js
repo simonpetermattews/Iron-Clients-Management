@@ -127,12 +127,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${escapeHtml(r.surname || '')}</td>
         <td>${escapeHtml(r.phone || '')}</td>
         <td>
-          <button class="btn btn-sm btn-primary" data-action="detail">Dettagli</button>
-          <button class="btn btn-sm btn-secondary ms-1" data-action="edit">Modifica</button>
-          <button class="btn btn-sm btn-danger ms-1" data-action="delete">Elimina</button>
+          <button class="btn btn-sm btn-primary" data-action="detail"><i class="bi bi-clipboard-data-fill"></i></button>
+          <button class="btn btn-sm btn-warning ms-3 " data-action="edit"><i class="bi bi-pen"></i></button>
+          <button class="btn btn-sm btn-danger ms-3 " data-action="delete"><i class="bi bi-trash3"></i></button>
         </td>
         <td>
-          <button class="btn btn-sm btn-outline-secondary" data-action="photos">Foto</button>
+          <button class="btn btn-sm btn-success " data-action="photos"><i class="bi bi-camera-fill"></i></button>
         </td>
       </tr>
     `).join('') || `<tr><td colspan="5">Nessun cliente presente</td></tr>`;
