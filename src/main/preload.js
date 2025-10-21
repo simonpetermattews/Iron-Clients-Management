@@ -3,24 +3,15 @@ console.log('[Preload] loaded');
 
 contextBridge.exposeInMainWorld('api', {
   send: (channel, payload) => ipcRenderer.send(channel, payload),
-  on: (channel, listener) => {
-    const wrapped = (_e, ...args) => listener(...args);
-    ipcRenderer.on(channel, wrapped);
-    return () => ipcRenderer.removeListener(channel, wrapped);
-  },
-  once: (channel, listener) => {
-    ipcRenderer.once(channel, (_e, ...args) => listener(...args));
-  },
+  on: (channel, fn) => ipcRenderer.on(channel, (_e, data) => fn(data)),
+  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
 
-  // Foto: metodi usati in photos.js
+  // Finestra foto (usata da renderer.js)
+  openPhotosWindow: (clientName) => ipcRenderer.send('photos:open', { clientName }),
+
+  // Foto: usate da photos.js
   getClientPhotos: (name) => ipcRenderer.invoke('get-client-photos', name),
   uploadClientPhotos: (name) => ipcRenderer.invoke('upload-client-photos', name),
   openClientPhotosFolder: (name) => ipcRenderer.invoke('open-client-photos-folder', name),
   openClientPhoto: (fileUrl) => ipcRenderer.invoke('open-client-photo', fileUrl),
-
-  // Apertura finestra Foto dal renderer principale
-  openPhotosWindow: (clientName) => ipcRenderer.send('photos:open', { clientName }),
-
-  // Backup database
-  backupDatabaseManual: () => ipcRenderer.invoke('db:backup:manual'),
 });
