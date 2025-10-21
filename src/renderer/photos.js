@@ -20,14 +20,24 @@
   }
 
   const params = new URLSearchParams(location.search);
-  const clientName = params.get('client') || 'Cliente';
+  const rawClient = (params.get('client') || '').trim();
+  const clientName = rawClient || null;
+
   const title = document.getElementById('client-title');
   const uploadBtn = document.getElementById('upload-btn');
   const openFolderBtn = document.getElementById('open-folder-btn');
   const gallery = document.getElementById('gallery');
   const emptyMsg = document.getElementById('empty-msg');
 
-  title.textContent = `Foto: ${clientName}`;
+  title.textContent = `Foto: ${rawClient || 'Cliente'}`;
+
+  const requireClient = () => {
+    if (!clientName) {
+      alert('Nessun cliente selezionato.');
+      return false;
+    }
+    return true;
+  };
 
   const render = (files) => {
     gallery.innerHTML = '';
@@ -47,7 +57,7 @@
 
   const load = async () => {
     try {
-      const files = await api.getClientPhotos(clientName);
+      const files = await api.getClientPhotos(clientName ?? undefined);
       render(files);
     } catch (e) {
       console.error(e);
@@ -55,6 +65,7 @@
   };
 
   uploadBtn.addEventListener('click', async () => {
+    if (!requireClient()) return;
     try {
       const files = await api.uploadClientPhotos(clientName);
       if (files && files.length) await load();
@@ -64,6 +75,7 @@
   });
 
   openFolderBtn?.addEventListener('click', () => {
+    if (!requireClient()) return;
     api.openClientPhotosFolder(clientName);
   });
 

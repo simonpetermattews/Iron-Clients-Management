@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+  const { contextBridge, ipcRenderer } = require('electron');
 console.log('[Preload] loaded');
 
 contextBridge.exposeInMainWorld('api', {
@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld('api', {
   openClientPhoto: (fileUrl) => ipcRenderer.invoke('open-client-photo', fileUrl),
 
   // Apertura finestra Foto dal renderer principale
-  openPhotosWindow: (clientName) => ipcRenderer.send('photos:open', { clientName }),
+  openPhotosWindow: (clientName) => ipcRenderer.send('photos:open', clientName),
 
   // Backup database
   backupDatabaseManual: () => ipcRenderer.invoke('db:backup:manual'),

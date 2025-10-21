@@ -40,8 +40,12 @@
   "config": {
     "forge": {
       "packagerConfig": {
-        "asar": { "unpack": "**/*.node" },
-        "extraResource": [ "assets" ],
+        "asar": {
+          "unpack": "**/*.node"
+        },
+        "extraResource": [
+          "assets"
+        ],
         "executableName": "client-management-electron"
       },
       "makers": [
