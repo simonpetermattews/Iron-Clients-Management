@@ -138,6 +138,8 @@ function ts() {
 
 async function backupDatabase(toFilePath) {
   // Snapshot consistente, anche con WAL attivo
+  // Evita errori se il DB è già chiuso
+  if (!db || db.open === false) return null;
   await db.backup(toFilePath);
   return toFilePath;
 }
@@ -154,9 +156,12 @@ async function rotateBackups(dir, keep = 10) {
 
 async function backupDatabaseAuto() {
   const target = path.join(backupsDir, `clients-${ts()}.db`);
-  await backupDatabase(target);
-  await rotateBackups(backupsDir, 10);
-  return target;
+  const res = await backupDatabase(target);
+  if (res) {
+    await rotateBackups(backupsDir, 10);
+    return target;
+  }
+  return null;
 }
 
 // Backup giornaliero (una volta al giorno)
@@ -391,5 +396,91 @@ ipcMain.on('training:delete', (event, payload = {}) => {
     event.sender.send('training:delete:success');
   } catch (err) {
     event.sender.send('training:delete:error', err.message || 'Errore eliminazione scheda');
+  }
+});
+
+// ---- Foto clienti: IPC handlers ----
+function sanitizeName(s) {
+  return String(s || 'Cliente').trim().replace(/[\\/:*?"<>|]+/g, '_').slice(0, 120);
+}
+
+const PHOTOS_BASE_DIR = path.join(app.getPath('pictures'), 'IRON-Clients-Photos');
+
+function getClientFolder(clientName) {
+  const safe = sanitizeName(clientName);
+  const dir = path.join(PHOTOS_BASE_DIR, safe);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function isImageFile(name) {
+  return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(name);
+}
+
+ipcMain.handle('get-client-photos', async (_e, clientName) => {
+  try {
+    const dir = getClientFolder(clientName);
+    const files = fs.readdirSync(dir)
+      .filter(isImageFile)
+      .map(f => pathToFileURL(path.join(dir, f)).href);
+    return files;
+  } catch (err) {
+    console.error('[Photos] get-client-photos:', err);
+    return [];
+  }
+});
+
+ipcMain.handle('upload-client-photos', async (event, clientName) => {
+  try {
+    const dir = getClientFolder(clientName);
+    const bw = BrowserWindow.fromWebContents(event.sender);
+    const { canceled, filePaths } = await dialog.showOpenDialog(bw, {
+      title: 'Seleziona immagini',
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Immagini', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif'] }]
+    });
+    if (canceled || !filePaths?.length) return [];
+
+    const copied = [];
+    for (const src of filePaths) {
+      const base = path.basename(src);
+      let dest = path.join(dir, base);
+
+      // Evita conflitti di nome
+      if (fs.existsSync(dest)) {
+        const ext = path.extname(base);
+        const name = path.basename(base, ext);
+        dest = path.join(dir, `${name}-${Date.now()}${ext}`);
+      }
+
+      fs.copyFileSync(src, dest);
+      copied.push(pathToFileURL(dest).href);
+    }
+    return copied;
+  } catch (err) {
+    console.error('[Photos] upload-client-photos:', err);
+    return [];
+  }
+});
+
+ipcMain.handle('open-client-photos-folder', async (_e, clientName) => {
+  try {
+    const dir = getClientFolder(clientName);
+    await shell.openPath(dir);
+    return true;
+  } catch (err) {
+    console.error('[Photos] open-client-photos-folder:', err);
+    return false;
+  }
+});
+
+ipcMain.handle('open-client-photo', async (_e, fileUrl) => {
+  try {
+    if (!fileUrl) return false;
+    await shell.openExternal(fileUrl);
+    return true;
+  } catch (err) {
+    console.error('[Photos] open-client-photo:', err);
+    return false;
   }
 });
