@@ -28,12 +28,28 @@ CREATE TABLE IF NOT EXISTS training_plans (
   notes TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME,
+  /* nuove colonne (verranno anche aggiunte con ALTER se il db esiste già) */
+  side_bend_dx REAL,
+  side_bend_sx REAL,
   FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
 );
 `);
 
 console.log('[DB] Path:', dbPath);
 console.log('[DB] Tables:', db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all());
+
+// Aggiunge la colonna se manca (per DB già creati)
+function ensureColumn(table, column, type) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!cols.some(c => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    console.log(`[DB] Added column ${table}.${column} (${type})`);
+  }
+}
+
+// Garantisce le colonne per training_plans
+ensureColumn('training_plans', 'side_bend_dx', 'REAL');
+ensureColumn('training_plans', 'side_bend_sx', 'REAL');
 
 // Esempi funzioni
 function insertClient(client) {

@@ -2,8 +2,40 @@
     --dark: #141313;
     --brand: #4A8FE7;
     --accent: #F26419;
-    --bg: #080808;
+    --bg: #222222;
     --text: #FFF9EC;
+}
+
+.text-dark {
+    color: var(--dark) !important;
+}
+
+.text-brand {
+    color: var(--brand) !important;
+}
+
+.text-accent {
+    color: var(--accent) !important;
+}
+
+.text-text {
+    color: var(--text) !important;
+}
+
+.bg-dark {
+    background-color: var(--dark) !important;
+}
+
+.bg-brand {
+    background-color: var(--brand) !important;
+}
+
+.bg-text {
+    background-color: var(--text) !important;
+}
+
+.bg-bg {
+    background-color: var(--bg) !important;
 }
 
 
@@ -123,6 +155,37 @@ svg {
 }
 
 
+
+#new-training-btn {
+    padding: 7px 20px;
+    border-radius: 50px;
+    cursor: pointer;
+    border: none;
+    color: yellowgreen;
+    background-color: var(--dark);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-size: 15px;
+    transition: all 0.5s ease;
+}
+
+#new-training-btn:hover {
+    letter-spacing: 3px;
+    background-color: yellowgreen;
+    color: var(--dark);
+    box-shadow: yellowgreen 0px 7px 29px 0px;
+}
+
+#new-training-btn:active {
+    letter-spacing: 3px;
+    background-color: yellowgreen;
+    color: var(--dark);
+    box-shadow: yellowgreen 0px 7px 29px 0px;
+    transform: translateY(10px);
+    transition: 100ms;
+}
+
+
 .container {
     width: 80%;
     margin: auto;
@@ -131,7 +194,7 @@ svg {
 
 form {
     background: var(--bg);
-    padding: 20px;
+    padding: 10px;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
 }
@@ -172,13 +235,13 @@ form input[type="submit"]:hover {
 }
 
 .table {
-    box-shadow: #292929 0px 0px 50px !important;
-    border: #F26419 5px solid !important;
+    box-shadow: #000000 5px 5px 15px !important;
+    border: #F26419 3px solid !important;
     border-radius: 15px !important;
     overflow: hidden !important;
     border-collapse: separate !important;
     border-spacing: 0 !important;
-    padding: 0px !important;
+    padding: 5px !important;
 }
 
 .client-list {
@@ -190,7 +253,7 @@ form input[type="submit"]:hover {
     border-collapse: collapse;
     background-color: var(--bg);
     color: var(--text);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    box-shadow: 5px 10px 10px rgb(0, 0, 0);
 }
 
 .client-list th,
@@ -254,7 +317,7 @@ form input[type="submit"]:hover {
     cursor: pointer;
 }
 
-   
+
 
 
 
@@ -267,4 +330,73 @@ form input[type="submit"]:hover {
     to {
         left: -100%;
     }
+}
+
+/* --- Client detail page theming & utilities (scoped) --- */
+.muted {
+    color: #9ca3af !important;
+}
+
+.toolbar {
+    margin: 1rem 0;
+}
+
+.btn-accent {
+    --_bg: var(--accent);
+    --_fg: var(--dark);
+    background-color: var(--_bg) !important;
+    border-color: var(--_bg) !important;
+    color: var(--_fg) !important;
+}
+
+.btn-accent:hover {
+    filter: brightness(1.05);
+    color: var(--dark) !important;
+}
+
+/* Scope card and detail-only styles to this page to avoid side effects */
+body[data-page="client-detail"] .card {
+    background-color: #1b1b1b;
+    box-shadow: #000000 5px 5px 15px !important;
+    border: 1px solid var(--accent);
+    color: var(--text);
+    border-radius: .5rem;
+    padding: .75rem;
+    margin-bottom: 100px;
+}
+
+body[data-page="client-detail"] .card-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    margin-bottom: .5rem;
+}
+
+body[data-page="client-detail"] .card-section-title {
+    font-weight: 600;
+    margin: .75rem 0 .4rem;
+    color: var(--accent);
+}
+
+body[data-page="client-detail"] .kv-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .5rem 1rem;
+}
+
+@media (max-width: 640px) {
+    body[data-page="client-detail"] .kv-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+body[data-page="client-detail"] .kv .k {
+    color: #a9c9ff;
+    font-size: .8rem;
+    font-weight: bold;
+}
+
+body[data-page="client-detail"] .kv .v {
+    font-size: .95rem;
 }

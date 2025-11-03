@@ -3,95 +3,227 @@
   <head>
     <meta charset="utf-8" />
     <title>Dettaglio Cliente</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
-    <style>
-      body { font-family: system-ui, Arial, sans-serif; margin: 16px; }
-      h1 { margin-bottom: 8px; }
-      .muted { color: #666; }
-      .card { border: 1px solid #ddd; padding: 12px; border-radius: 6px; margin-bottom: 8px; }
-      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .toolbar { margin: 16px 0; }
-
-      /* Modal */
-      .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; padding: 16px; }
-      .modal.show { display: flex; }
-      .modal-content { background: #fff; width: min(900px, 100%); max-height: 90vh; overflow: auto; border-radius: 8px; padding: 16px; position: relative; }
-      .modal-close { position: absolute; top: 8px; right: 8px; border: none; background: transparent; font-size: 22px; cursor: pointer; }
-      form { display: grid; gap: 8px; }
-      textarea { min-height: 100px; }
-      ul { padding-left: 18px; }
-      body.no-scroll { overflow: hidden; }
-      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .section-title { grid-column: 1 / -1; margin: 12px 0 6px; }
-      label { display: grid; gap: 4px; }
-      input[type="number"], input[type="text"], textarea { padding: 6px; }
-      button { padding: 6px 10px; cursor: pointer; }
-      .card-title { display:flex; justify-content:space-between; align-items:center; font-weight:600; margin-bottom:8px; }
-      .card-section-title { font-weight:600; margin:10px 0 6px; color:#444; }
-      .kv-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap: 6px 12px; }
-      .kv .k { color:#555; font-size:12px; }
-      .kv .v { font-size:14px; }
-      @media (max-width: 640px) { .kv-grid { grid-template-columns: 1fr; } }
-    </style>
+    <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+        <link rel="stylesheet"
+            href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+        <link rel="stylesheet"
+            href="../../node_modules/bootstrap-icons/font/bootstrap-icons.min.css" />
+        <link rel="stylesheet" href="styles.css">
   </head>
-  <body>
-    <a id="back-btn" href="#" class="muted">← Torna all’elenco</a>
-    <h1 id="client-name">Cliente</h1>
-    <div class="muted" id="client-meta"></div>
+  <body data-page="client-detail" class="bg-bg text-text">
+    <div class="container py-3">
+      <a id="back-btn" href="#"
+        class="text-accent d-inline-flex align-items-center gap-1 text-decoration-none">←
+        Torna all’elenco</a>
+      <h1 id="client-name" class="mt-2 mb-1">Cliente</h1>
+      <div class="muted" id="client-meta"></div>
 
-    <div class="toolbar">
-      <button id="new-training-btn" type="button">Nuova Scheda</button>
-    </div>
-
-    <!-- Modal con il form -->
-    <div id="training-modal" class="modal" aria-hidden="true">
-      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <button id="training-modal-close" class="modal-close" aria-label="Chiudi">×</button>
-        <h2 id="modal-title">Nuova scheda allenamento</h2>
-
-        <form id="training-form" class="grid-2">
-          <h3 class="section-title">Dati Anagrafici</h3>
-          <label>Altezza<input type="number" name="altezza" /></label>
-          <label>Peso<input type="number" name="peso" /></label>
-
-          <h3 class="section-title">Circonferenze</h3>
-          <label>Circonferenza Torace (cm)<input type="number" name="circonferenza_torace" /></label>
-          <label>Circonferenza Vita (cm)<input type="number" name="circonferenza_vita" /></label>
-          <label>Circonferenza Ombelicale (cm)<input type="number" name="circonferenza_ombelicale" /></label>
-          <label>Circonferenza Fianchi (cm)<input type="number" name="circonferenza_fianchi" /></label>
-          <label>Circonferenza Braccio Dx (cm)<input type="number" name="circonferenza_braccio_dx" /></label>
-          <label>Circonferenza Braccio Sx (cm)<input type="number" name="circonferenza_braccio_sx" /></label>
-          <label>Circonferenza Gamba Dx (cm)<input type="number" name="circonferenza_gamba_dx" /></label>
-          <label>Circonferenza Gamba Sx (cm)<input type="number" name="circonferenza_gamba_sx" /></label>
-
-          <h3 class="section-title">Stile di vita</h3>
-          <label>Idratazione (lt)<input type="number" name="idratazione" /></label>
-          <label>Ore di sonno<input type="number" name="ore_di_sonno" /></label>
-          <label>Alimentazione <textarea name="alimentazione"></textarea></label>
-          <label>Obiettivo<textarea name="obiettivo"></textarea></label>
-          <label>Frequenza Allenamento<input type="text" name="frequenza_allenamento" /></label>
-
-          <h3 class="section-title">Test Fisici</h3>
-          <label>Sit and Reach<input type="number" name="sit_and_reach"  /></label>
-          <label>Side Bend<input type="number" name="side_bend"  /></label>
-          <label>Flessibilità spalla<input type="number" name="flessibilita_spalla"  /></label>
-          <label>Flamingo Dx<input type="number" name="flamingo_dx"  /></label>
-          <label>Flamingo Sx<input type="number" name="flamingo_sx"  /></label>
-          <label>Piegamenti Braccia<input type="number" name="piegamenti_braccia"  /></label>
-          <label>Squat<input type="number" name="squat"  /></label>
-          <label>Sit Up<input type="number" name="sit_up"  /></label>
-          <label>Trazioni<input type="number" name="trazioni"  /></label>0
-
-          <div class="section-title" style="display:flex; gap: 8px; justify-content: flex-end;">
-            <button type="button" id="cancel-training-btn">Annulla</button>
-            <button type="submit">Salva scheda</button>
-          </div>
-        </form>
+      <div
+        class="col-12 d-flex justify-content-center align-items-center">
+        <button id="new-training-btn" class="primary">Nuova Scheda</button>
       </div>
-    </div>
 
-    <h2>Schede salvate</h2>
-    <div id="trainings-list"></div>
+      <!-- Modal con il form -->
+      <div id="training-modal" class="modal" aria-hidden="true">
+        <div class="modal-content" role="dialog" aria-modal="true"
+          aria-labelledby="modal-title">
+          <button id="training-modal-close" class="modal-close"
+            aria-label="Chiudi">×</button>
+          <h2 id="modal-title">Nuova scheda allenamento</h2>
+          <form id="training-form" class="row g-3">
+            <div class="col-12"><h3 class="section-title h5">Dati
+                Anagrafici</h3></div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="altezza">Altezza</label>
+              <input class="form-control" id="altezza" type="number"
+                name="altezza" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="peso">Peso</label>
+              <input class="form-control" id="peso" type="number" name="peso" />
+            </div>
+
+            <div class="col-12"><h3
+                class="section-title h5">Circonferenze</h3></div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="circonferenza_torace">Circonferenza
+                Torace (cm)</label>
+              <input class="form-control" id="circonferenza_torace"
+                type="number" name="circonferenza_torace" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="circonferenza_vita">Circonferenza
+                Vita (cm)</label>
+              <input class="form-control" id="circonferenza_vita" type="number"
+                name="circonferenza_vita" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label"
+                for="circonferenza_ombelicale">Circonferenza Ombelicale
+                (cm)</label>
+              <input class="form-control" id="circonferenza_ombelicale"
+                type="number" name="circonferenza_ombelicale" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label"
+                for="circonferenza_fianchi">Circonferenza Fianchi (cm)</label>
+              <input class="form-control" id="circonferenza_fianchi"
+                type="number" name="circonferenza_fianchi" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label"
+                for="circonferenza_braccio_dx">Circonferenza Braccio Dx
+                (cm)</label>
+              <input class="form-control" id="circonferenza_braccio_dx"
+                type="number" name="circonferenza_braccio_dx" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label"
+                for="circonferenza_braccio_sx">Circonferenza Braccio Sx
+                (cm)</label>
+              <input class="form-control" id="circonferenza_braccio_sx"
+                type="number" name="circonferenza_braccio_sx" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label"
+                for="circonferenza_gamba_dx">Circonferenza Gamba Dx (cm)</label>
+              <input class="form-control" id="circonferenza_gamba_dx"
+                type="number" name="circonferenza_gamba_dx" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label"
+                for="circonferenza_gamba_sx">Circonferenza Gamba Sx (cm)</label>
+              <input class="form-control" id="circonferenza_gamba_sx"
+                type="number" name="circonferenza_gamba_sx" />
+            </div>
+
+            <div class="col-12"><h3 class="section-title h5">Stile di
+                vita</h3></div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="idratazione">Idratazione
+                (lt)</label>
+              <input class="form-control" id="idratazione" type="number"
+                name="idratazione" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="ore_di_sonno">Ore di sonno</label>
+              <input class="form-control" id="ore_di_sonno" type="number"
+                name="ore_di_sonno" />
+            </div>
+            <div class="col-12">
+              <label class="form-label"
+                for="alimentazione">Alimentazione</label>
+              <textarea class="form-control" id="alimentazione"
+                name="alimentazione" rows="3"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="obiettivo">Obiettivo</label>
+              <textarea class="form-control" id="obiettivo" name="obiettivo"
+                rows="3"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="frequenza_allenamento">Frequenza
+                Allenamento</label>
+              <input class="form-control" id="frequenza_allenamento" type="text"
+                name="frequenza_allenamento" />
+            </div>
+
+            <div class="col-12"><h3 class="section-title h5">Test
+                Fisici</h3></div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="sit_and_reach">Sit and
+                Reach</label>
+              <input class="form-control" id="sit_and_reach" type="number"
+                name="sit_and_reach" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="side_bend_dx">Side Bend Dx</label>
+              <input class="form-control" id="side_bend_dx" type="number"
+                name="side_bend_dx" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="side_bend_sx">Side Bend Sx</label>
+              <input class="form-control" id="side_bend_sx" type="number"
+                name="side_bend_sx" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="flessibilita_spalla">Flessibilità
+                spalla</label>
+              <input class="form-control" id="flessibilita_spalla" type="number"
+                name="flessibilita_spalla" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="flamingo_dx">Flamingo Dx</label>
+              <input class="form-control" id="flamingo_dx" type="number"
+                name="flamingo_dx" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="flamingo_sx">Flamingo Sx</label>
+              <input class="form-control" id="flamingo_sx" type="number"
+                name="flamingo_sx" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="piegamenti_braccia">Piegamenti
+                Braccia</label>
+              <input class="form-control" id="piegamenti_braccia" type="number"
+                name="piegamenti_braccia" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="squat">Squat</label>
+              <input class="form-control" id="squat" type="number"
+                name="squat" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="sit_up">Sit Up</label>
+              <input class="form-control" id="sit_up" type="number"
+                name="sit_up" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="trazioni">Trazioni</label>
+              <input class="form-control" id="trazioni" type="number"
+                name="trazioni" />
+            </div>
+
+            <!-- Test Cooper -->
+            <div class="col-12"><h3 class="section-title h5">Test
+                Cooper</h3></div>
+            <div class="col-12 d-flex justify-content-end">
+              <button id="cooper-add" type="button"
+                class="btn btn-sm btn-outline-light">Aggiungi step</button>
+            </div>
+            <div class="col-12">
+              <table
+                class="table table-dark table-striped table-hover table-sm mb-2"
+                id="cooper-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Velocità (Km/h)</th>
+                    <th>Tempo (min)</th>
+                    <th>Frequenza cardiaca (bpm)</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="cooper-rows"></tbody>
+              </table>
+              <small class="muted">Velocità iniziale 8,5 Km/h, Tempo iniziale 0
+                min. Ogni step: +1 Km/h, +2 min.</small>
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+              <button type="button" id="cancel-training-btn"
+                class="btn btn-outline-light">Annulla</button>
+              <button type="submit" class="btn btn-accent">Salva scheda</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <h2 class="mt-4">Schede salvate</h2>
+      <div id="trainings-list" class="mt-3"></div>
+
+    </div>
 
     <script src="./client-detail.js"></script>
   </body>

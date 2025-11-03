@@ -68,8 +68,8 @@ function ensureSchema(db) {
       CirconferenzaTorace REAL, CirconferenzaVita REAL, CirconferenzaOmbelicale REAL, CirconferenzaFianchi REAL,
       CirconferenzaBraccioDx REAL, CirconferenzaBraccioSx REAL, CirconferenzaGambaDx REAL, CirconferenzaGambaSx REAL,
       Idratazione REAL, OreDiSonno REAL, Alimentazione TEXT, Obbiettivo TEXT, FrequenzaAllenamento TEXT,
-      SitAndReach REAL, SideBend REAL, FlessibilitaSpalla REAL, FlamingoDx REAL, FlamingoSx REAL,
-      PiegamentiBraccia INTEGER, Squat INTEGER, SitUp INTEGER, Trazioni INTEGER,
+      SitAndReach REAL, SideBendDx REAL, SideBendSx REAL, FlessibilitaSpalla REAL, FlamingoDx REAL, FlamingoSx REAL,
+      PiegamentiBraccia INTEGER, Squat INTEGER, SitUp INTEGER, Trazioni INTEGER,CooperFreq TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME,
       FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
@@ -79,14 +79,14 @@ function ensureSchema(db) {
 
   // Migrazione colonne mancanti (se DB già esiste)
   const colTypes = new Map([
-    ['client_id','INTEGER'], ['title','TEXT'], ['notes','TEXT'], ['date','TEXT'], ['exercises','TEXT'],
-    ['Altezza','REAL'], ['Peso','REAL'],
-    ['CirconferenzaTorace','REAL'], ['CirconferenzaVita','REAL'], ['CirconferenzaOmbelicale','REAL'], ['CirconferenzaFianchi','REAL'],
-    ['CirconferenzaBraccioDx','REAL'], ['CirconferenzaBraccioSx','REAL'], ['CirconferenzaGambaDx','REAL'], ['CirconferenzaGambaSx','REAL'],
-    ['Idratazione','REAL'], ['OreDiSonno','REAL'], ['Alimentazione','TEXT'], ['Obbiettivo','TEXT'], ['FrequenzaAllenamento','TEXT'],
-    ['SitAndReach','REAL'], ['SideBend','REAL'], ['FlessibilitaSpalla','REAL'], ['FlamingoDx','REAL'], ['FlamingoSx','REAL'],
-    ['PiegamentiBraccia','INTEGER'], ['Squat','INTEGER'], ['SitUp','INTEGER'], ['Trazioni','INTEGER'],
-    ['created_at','DATETIME'], ['updated_at','DATETIME'],
+    ['client_id', 'INTEGER'], ['title', 'TEXT'], ['notes', 'TEXT'], ['date', 'TEXT'], ['exercises', 'TEXT'],
+    ['Altezza', 'REAL'], ['Peso', 'REAL'],
+    ['CirconferenzaTorace', 'REAL'], ['CirconferenzaVita', 'REAL'], ['CirconferenzaOmbelicale', 'REAL'], ['CirconferenzaFianchi', 'REAL'],
+    ['CirconferenzaBraccioDx', 'REAL'], ['CirconferenzaBraccioSx', 'REAL'], ['CirconferenzaGambaDx', 'REAL'], ['CirconferenzaGambaSx', 'REAL'],
+    ['Idratazione', 'REAL'], ['OreDiSonno', 'REAL'], ['Alimentazione', 'TEXT'], ['Obbiettivo', 'TEXT'], ['FrequenzaAllenamento', 'TEXT'],
+    ['SitAndReach', 'REAL'], ['SideBendDx', 'REAL'],['SideBendSx', 'REAL'], ['FlessibilitaSpalla', 'REAL'], ['FlamingoDx', 'REAL'], ['FlamingoSx', 'REAL'],
+    ['PiegamentiBraccia', 'INTEGER'], ['Squat', 'INTEGER'], ['SitUp', 'INTEGER'], ['Trazioni', 'INTEGER'],['CooperFreq', 'TEXT'],
+    ['created_at', 'DATETIME'], ['updated_at', 'DATETIME'],
   ]);
   const existing = new Set(db.prepare("PRAGMA table_info('training_plans')").all().map(r => r.name));
   for (const [col, type] of colTypes) {
@@ -133,7 +133,7 @@ fs.mkdirSync(backupsDir, { recursive: true });
 function ts() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
 
 async function backupDatabase(toFilePath) {
@@ -150,7 +150,7 @@ async function rotateBackups(dir, keep = 10) {
     .map(f => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
     .sort((a, b) => b.t - a.t);
   for (let i = keep; i < files.length; i++) {
-    try { fs.unlinkSync(path.join(dir, files[i].f)); } catch {}
+    try { fs.unlinkSync(path.join(dir, files[i].f)); } catch { }
   }
 }
 
@@ -197,7 +197,7 @@ module.exports = {
   // ...existing exports...
   insertClient, getClient, listClients, updateClient, deleteClient,
   db,
-  closeDb: () => { try { db.close(); } catch {} },
+  closeDb: () => { try { db.close(); } catch { } },
   backupDatabaseAuto,
   backupDatabaseDaily
 };
@@ -211,6 +211,19 @@ ipcMain.on('client:read', (event) => {
     event.sender.send('client:read:success', rows);
   } catch (err) {
     event.sender.send('client:read:error', err.message || 'Errore lettura clienti');
+  }
+});
+
+// Leggi singolo cliente per id (usato da client-detail)
+ipcMain.on('client:get', (event, payload = {}) => {
+  try {
+    const id = Number(payload?.clientId ?? payload?.id ?? payload);
+    if (!id) throw new Error('ID mancante');
+    const row = db.prepare('SELECT id, name, surname, phone FROM clients WHERE id = ?').get(id);
+    if (!row) throw new Error('Cliente non trovato');
+    event.sender.send('client:get:success', row);
+  } catch (err) {
+    event.sender.send('client:get:error', err.message || 'Errore lettura cliente');
   }
 });
 
@@ -276,35 +289,158 @@ function listTrainingsByClient(clientId) {
   return db.prepare('SELECT * FROM training_plans WHERE client_id = ? ORDER BY created_at DESC').all(clientId);
 }
 
-function createTraining(t) {
+// ---- Training: schema helpers coerenti con ensureSchema ----
+const TRAINING_FIELDS = [
+  'title', 'notes', 'date', 'exercises',
+  'Altezza', 'Peso',
+  'CirconferenzaTorace', 'CirconferenzaVita', 'CirconferenzaOmbelicale', 'CirconferenzaFianchi',
+  'CirconferenzaBraccioDx', 'CirconferenzaBraccioSx', 'CirconferenzaGambaDx', 'CirconferenzaGambaSx',
+  'Idratazione', 'OreDiSonno', 'Alimentazione', 'Obbiettivo', 'FrequenzaAllenamento',
+  'SitAndReach', 'SideBendDx', 'SideBendSx', 'FlessibilitaSpalla', 'FlamingoDx', 'FlamingoSx',
+  'PiegamentiBraccia', 'Squat', 'SitUp', 'Trazioni','CooperFreq'
+];
+
+const NUM_FIELDS = new Set([
+  'Altezza','Peso',
+  'CirconferenzaTorace','CirconferenzaVita','CirconferenzaOmbelicale','CirconferenzaFianchi',
+  'CirconferenzaBraccioDx','CirconferenzaBraccioSx','CirconferenzaGambaDx','CirconferenzaGambaSx',
+  'Idratazione','OreDiSonno',
+  'SitAndReach','SideBendDx','SideBendSx','FlessibilitaSpalla','FlamingoDx','FlamingoSx',
+  'PiegamentiBraccia','Squat','SitUp','Trazioni'
+]);
+
+function numOrNull(v) {
+  if (v === undefined || v === null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizeTrainingPayload(p = {}) {
+  const out = { ...p };
+
+  // alias
+  if (out.side_bend_dx !== undefined && out.SideBendDx === undefined) out.SideBendDx = out.side_bend_dx;
+  if (out.side_bend_sx !== undefined && out.SideBendSx === undefined) out.SideBendSx = out.side_bend_sx;
+
+  // accetta cooperHRs o CooperFrequenze ma salva in CooperFreq
+  if (out.cooperHRs !== undefined && out.CooperFreq === undefined) out.CooperFreq = out.cooperHRs;
+  if (out.CooperFrequenze !== undefined && out.CooperFreq === undefined) out.CooperFreq = out.CooperFrequenze;
+
+  // coerci numerici singoli
+  for (const k of TRAINING_FIELDS) {
+    if (NUM_FIELDS.has(k) && k in out) out[k] = numOrNull(out[k]);
+  }
+
+  // CooperFreq: accetta array o stringa JSON e salva come JSON pulito
+  if (out.CooperFreq !== undefined) {
+    const toArray = (v) => {
+      if (Array.isArray(v)) return v;
+      if (typeof v === 'string') {
+        try { const a = JSON.parse(v); return Array.isArray(a) ? a : []; } catch { return []; }
+      }
+      return [];
+    };
+    const arr = toArray(out.CooperFreq)
+      .map(Number)
+      .filter((n) => Number.isFinite(n));
+    out.CooperFreq = JSON.stringify(arr);
+  }
+
+  // client id
+  out.client_id = Number(out.clientId ?? out.client_id);
+  delete out.clientId;
+
+  // titolo di default
+  if (out.title === undefined || out.title === null || String(out.title).trim() === '') {
+    out.title = `Scheda ${new Date().toLocaleDateString('it-IT')}`;
+  }
+
+  return out;
+}
+
+function createTraining(payload = {}) {
+  const p = normalizeTrainingPayload(payload);
+  if (!p.client_id) throw new Error('clientId mancante');
+
   const cols = ['client_id'];
+  const vals = [p.client_id];
   const placeholders = ['?'];
-  const vals = [t.clientId];
 
   for (const k of TRAINING_FIELDS) {
-    if (t[k] !== undefined && t[k] !== null && t[k] !== '') {
+    if (p[k] !== undefined) {
       cols.push(k);
+      vals.push(p[k]);
       placeholders.push('?');
-      vals.push(t[k]);
     }
   }
-  if (!cols.includes('title')) throw new Error('Titolo richiesto');
 
   const sql = `INSERT INTO training_plans (${cols.join(',')}) VALUES (${placeholders.join(',')})`;
   const info = db.prepare(sql).run(...vals);
   return info.lastInsertRowid;
 }
 
-// Campi consentiti per training
-const TRAINING_FIELDS = [
-  'title','notes','date','exercises',
-  'Altezza','Peso',
-  'CirconferenzaTorace','CirconferenzaVita','CirconferenzaOmbelicale','CirconferenzaFianchi',
-  'CirconferenzaBraccioDx','CirconferenzaBraccioSx','CirconferenzaGambaDx','CirconferenzaGambaSx',
-  'Idratazione','OreDiSonno','Alimentazione','Obbiettivo','FrequenzaAllenamento',
-  'SitAndReach','SideBend','FlessibilitaSpalla','FlamingoDx','FlamingoSx',
-  'PiegamentiBraccia','Squat','SitUp','Trazioni'
-];
+// ---- Training CRUD/list unificati ----
+ipcMain.on('training:list', (event, { clientId } = {}) => {
+  try {
+    const rows = db.prepare(`
+      SELECT *
+      FROM training_plans
+      WHERE client_id = ?
+      ORDER BY created_at DESC, id DESC
+    `).all(Number(clientId));
+    event.sender.send('training:list:success', rows);
+  } catch (err) {
+    event.sender.send('training:list:error', err.message || 'Errore lista schede');
+  }
+});
+
+ipcMain.on('training:create', (event, payload = {}) => {
+  try {
+    const id = createTraining(payload);
+    if (!id) throw new Error('Creazione fallita');
+    event.sender.send('training:create:success');
+  } catch (err) {
+    event.sender.send('training:create:error', err.message || 'Errore creazione scheda');
+  }
+});
+
+ipcMain.on('training:update', (event, payload = {}) => {
+  try {
+    const p = normalizeTrainingPayload(payload);
+    const id = Number(p.id);
+    if (!id) throw new Error('ID mancante');
+
+    const sets = [];
+    const vals = [];
+    for (const k of TRAINING_FIELDS) {
+      if (k in p) { sets.push(`${k}=?`); vals.push(p[k]); }
+    }
+    if (!sets.length) throw new Error('Nessun campo da aggiornare');
+
+    sets.push('updated_at=CURRENT_TIMESTAMP');
+    vals.push(id);
+
+    const sql = `UPDATE training_plans SET ${sets.join(', ')} WHERE id = ?`;
+    const info = db.prepare(sql).run(...vals);
+    if (info.changes === 0) throw new Error('Scheda non trovata');
+
+    event.sender.send('training:update:success');
+  } catch (err) {
+    event.sender.send('training:update:error', err.message || 'Errore aggiornamento scheda');
+  }
+});
+
+ipcMain.on('training:delete', (event, payload = {}) => {
+  try {
+    const id = Number(payload?.id);
+    if (!id) throw new Error('ID mancante');
+    const info = db.prepare('DELETE FROM training_plans WHERE id=?').run(id);
+    if (info.changes === 0) throw new Error('Scheda non trovata');
+    event.sender.send('training:delete:success');
+  } catch (err) {
+    event.sender.send('training:delete:error', err.message || 'Errore eliminazione scheda');
+  }
+});
 
 // ---- Apertura finestre ----
 function createChildWindow(htmlPath, query = '') {
@@ -329,74 +465,7 @@ ipcMain.on('client:detail:open', (_e, { clientId }) => {
 
 ipcMain.on('photos:open', (_e, { clientName }) => {
   const file = path.join(__dirname, '../renderer/photos.html');
-  createChildWindow(file, `?client=${encodeURIComponent(clientName || 'Cliente')}`);
-});
-
-// ---- Client get per dettaglio ----
-ipcMain.on('client:get', (event, { clientId }) => {
-  try {
-    const id = Number(clientId);
-    if (!id) throw new Error('ID mancante');
-    const row = getClientById(id);
-    if (!row) throw new Error('Cliente non trovato');
-    event.sender.send('client:get:success', row);
-  } catch (err) {
-    event.sender.send('client:get:error', err.message || 'Errore');
-  }
-});
-
-// ---- Training CRUD/list ----
-ipcMain.on('training:list', (event, { clientId }) => {
-  try {
-    const rows = listTrainingsByClient(Number(clientId));
-    event.sender.send('training:list:success', rows);
-  } catch (err) {
-    event.sender.send('training:list:error', err.message || 'Errore lista schede');
-  }
-});
-
-ipcMain.on('training:create', (event, payload = {}) => {
-  try {
-    const id = createTraining(payload);
-    if (!id) throw new Error('Creazione fallita');
-    event.sender.send('training:create:success');
-  } catch (err) {
-    event.sender.send('training:create:error', err.message || 'Errore creazione scheda');
-  }
-});
-
-ipcMain.on('training:update', (event, payload = {}) => {
-  try {
-    const id = Number(payload.id);
-    if (!id) throw new Error('ID mancante');
-    const sets = [];
-    const vals = [];
-    for (const k of TRAINING_FIELDS) {
-      if (k in payload) { sets.push(`${k}=?`); vals.push(payload[k]); }
-    }
-    if (!sets.length) throw new Error('Nessun campo da aggiornare');
-    vals.push(id);
-    const info = db.prepare(`UPDATE training_plans SET ${sets.join(',')} WHERE id=?`).run(...vals);
-    if (info.changes === 0) throw new Error('Scheda non trovata');
-
-    event.sender.send('training:update:success');
-  } catch (err) {
-    event.sender.send('training:update:error', err.message || 'Errore aggiornamento scheda');
-  }
-});
-
-ipcMain.on('training:delete', (event, payload = {}) => {
-  try {
-    const id = Number(payload.id);
-    if (!id) throw new Error('ID mancante');
-
-    const info = db.prepare('DELETE FROM training_plans WHERE id=?').run(id);
-    if (info.changes === 0) throw new Error('Scheda non trovata');
-
-    event.sender.send('training:delete:success');
-  } catch (err) {
-    event.sender.send('training:delete:error', err.message || 'Errore eliminazione scheda');
-  }
+  createChildWindow(file, `?client=${encodeURIComponent(clientName)}`);
 });
 
 // ---- Foto clienti: IPC handlers ----
