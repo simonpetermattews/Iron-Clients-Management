@@ -1,4 +1,5 @@
-// Usa solo il bridge esposto dal preload
+// Usa solo il bridg
+//  esposto dal preload
 const ipc = window.api;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -62,6 +63,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <input class="form-control" type="text" name="surname" />
         </div>
         <div class="mb-2">
+          <label class="form-label">Data di nascita</label>
+          <input class="form-control" type="date" name="birth_date" />
+        </div>
+        <div class="mb-2">
           <label class="form-label">Telefono</label>
           <input class="form-control" type="text" name="phone" />
         </div>
@@ -82,7 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
       name: (data.name || '').trim(),
       surname: (data.surname || '').trim(),
       phone: (data.phone || '').trim(),
-   };
+      birth_date: data.birth_date || null
+    };
 
     if (editingClientId) {
       ipc.send('client:update', { id: editingClientId, ...payload });
@@ -116,26 +122,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Tabella clienti
   function escapeHtml(s) {
-    return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
   }
   function renderClients(rows = []) {
     if (!tbody) return;
     const safe = Array.isArray(rows) ? rows : [];
-    tbody.innerHTML = safe.map(r => `
+    tbody.innerHTML = safe.map(r => {
+      const rawDate = r.birth_date || '';
+      const dateDisplay = rawDate ? new Date(rawDate).toLocaleDateString('it-IT') : '';
+      return `
       <tr data-id="${r.id}">
         <td>${escapeHtml(r.name || '')}</td>
         <td>${escapeHtml(r.surname || '')}</td>
+        <td data-raw-date="${escapeHtml(rawDate)}">${escapeHtml(dateDisplay)}</td>
         <td>${escapeHtml(r.phone || '')}</td>
         <td>
           <button class="btn btn-sm btn-primary" data-action="detail"><i class="bi bi-clipboard-data-fill"></i></button>
-          <button class="btn btn-sm btn-warning ms-3 " data-action="edit"><i class="bi bi-pen"></i></button>
-          <button class="btn btn-sm btn-danger ms-3 " data-action="delete" alt="Elimina"><i class="bi bi-trash3"></i></button>
+          <button class="btn btn-sm btn-warning ms-3" data-action="edit"><i class="bi bi-pen"></i></button>
+          <button class="btn btn-sm btn-danger ms-3" data-action="delete"><i class="bi bi-trash3"></i></button>
         </td>
         <td>
-          <button class="btn btn-sm btn-success " data-action="photos"><i class="bi bi-camera-fill"></i></button>
+          <button class="btn btn-sm btn-success" data-action="photos"><i class="bi bi-camera-fill"></i></button>
         </td>
-      </tr>
-    `).join('') || `<tr><td colspan="5">Nessun cliente presente</td></tr>`;
+      </tr>`;
+    }).join('') || `<tr><td colspan="6">Nessun cliente presente</td></tr>`;
   }
 
   // Delegation per azioni sulla tabella
@@ -160,7 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (form) {
           form.name.value = tds[0]?.textContent?.trim() || '';
           form.surname.value = tds[1]?.textContent?.trim() || '';
-          form.phone.value = tds[2]?.textContent?.trim() || '';
+          form.birth_date.value = tds[2]?.dataset?.rawDate || '';
+          form.phone.value = tds[3]?.textContent?.trim() || '';
         }
         openModal();
         break;
@@ -192,6 +203,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     window.api.on('training:list:error', (msg) => {
       console.error('Errore:', msg);
+    });
+  }
+
+  const formEl = document.getElementById('client-form');
+  formEl?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(formEl);
+    const payload = {
+      name: fd.get('name')?.trim(),
+      surname: fd.get('surname')?.trim(),
+      phone: fd.get('phone')?.trim() || null,
+      DataNascita: fd.get('data_nascita') || null
+    };
+    window.api.send('client:create', payload);
+  });
+
+  const form = document.getElementById('client-form');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const clientData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        birth_date: document.getElementById('birth_date').value || null
+      };
+      window.electronAPI.send('client:create', clientData);
     });
   }
 });

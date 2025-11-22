@@ -1,26 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Registration Form</title>
-    <link rel="stylesheet" href="../styles.css">
-</head>
-<body>
-    <div class="client-form-container">
-        <h1>Register Client</h1>
-        <form id="client-form">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" required>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Client Registration Form</title>
+        <link rel="stylesheet" href="../styles.css">
+    </head>
+    <body>
+        <div class="client-form-container">
+            <h1>Register Client</h1>
+            <form id="client-form">
+                <label for="name">Nome:</label>
+                <input type="text" id="name" name="name" required>
 
-            <label for="phone">Phone:</label>
-            <input type="tel" id="phone" name="phone" required>
+                <label for="surname">Cognome:</label>
+                <input type="text" id="surname" name="surname">
 
+                <label for="phone">Telefono:</label>
+                <input type="tel" id="phone" name="phone">
 
-            <button type="submit">Register Client</button>
-        </form>
-        <div id="form-message"></div>
-    </div>
-    <script src="../renderer.js"></script>
-</body>
+                <div class="form-row">
+                    <label for="birth_date">Data di nascita</label>
+                    <input type="date" id="birth_date" name="birth_date" lang="it">
+                </div>
+
+                <button type="submit">Salva Cliente</button>
+            </form>
+            <div id="form-message"></div>
+        </div>
+        <script src="../renderer.js"></script>
+    </body>
 </html>

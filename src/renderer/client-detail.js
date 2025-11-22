@@ -15,6 +15,7 @@ const clientId = getClientIdFromQuery();
 const clientNameEl = document.getElementById('client-name');
 const clientSurnameEl = document.getElementById('client-surname');
 const clientMetaEl = document.getElementById('client-meta');
+const clientDobEl = document.getElementById('client-dob');
 const trainingsListEl = document.getElementById('trainings-list');
 const backBtn = document.getElementById('back-btn');
 
@@ -106,17 +107,12 @@ function renderTrainings(trainings = []) {
   const formatWithUnit = (key, val) => {
     if (val === undefined || val === null || String(val).trim() === '') return '';
     const cmKeys = [
-      'CirconferenzaTorace',
-      'CirconferenzaVita',
-      'CirconferenzaOmbelicale',
-      'CirconferenzaFianchi',
-      'CirconferenzaBraccioDx',
-      'CirconferenzaBraccioSx',
-      'CirconferenzaGambaDx',
-      'CirconferenzaGambaSx'
+      'CirconferenzaTorace', 'CirconferenzaVita', 'CirconferenzaOmbelicale', 'CirconferenzaFianchi',
+      'CirconferenzaBraccioDx', 'CirconferenzaBraccioSx', 'CirconferenzaGambaDx', 'CirconferenzaGambaSx'
     ];
     if (cmKeys.includes(key)) return `${val} cm`;
     if (key === 'Peso') return `${val} kg`;
+    if (key === 'Idratazione') return `${val} lt`;
     return val;
   };
 
@@ -152,11 +148,19 @@ function renderTrainings(trainings = []) {
       ]
     },
     {
+      title: 'Infortuni e Patologie',
+      fields: [
+        ['Infortuni', 'Infortuni'],
+        ['Patologie', 'Patologie'],
+        ['EsperienzeSportive', 'Esperienze sportive']
+      ]
+    },
+    {
       title: 'Test Fisici',
       fields: [
         ['SitAndReach', 'Sit and Reach'],
-        ['SideBendDx', 'Side Bend Dx'],   // FIX
-        ['SideBendSx', 'Side Bend Sx'],   // FIX
+        ['SideBendDx', 'Side Bend Dx'],
+        ['SideBendSx', 'Side Bend Sx'],
         ['FlessibilitaSpalla', 'Flessibilità spalla'],
         ['FlamingoDx', 'Flamingo Dx'],
         ['FlamingoSx', 'Flamingo Sx'],
@@ -200,7 +204,7 @@ function renderTrainings(trainings = []) {
       `;
     }).join('');
 
-  // Tabella Test Cooper (risultati)
+    // Tabella Test Cooper (risultati)
     const cooperHtml = cooperTableHtmlFromJSON(t.CooperFreq);
 
     div.innerHTML = `
@@ -248,6 +252,9 @@ function setTrainingFormValues(t) {
   set('alimentazione', t.Alimentazione);
   set('obiettivo', t.Obbiettivo);
   set('frequenza_allenamento', t.FrequenzaAllenamento);
+  set('infortuni', t.Infortuni);
+  set('patologie', t.Patologie);
+  set('esperienze_sportive', t.EsperienzeSportive);
   set('sit_and_reach', t.SitAndReach);
   set('side_bend_dx', t.SideBendDx);   // FIX
   set('side_bend_sx', t.SideBendSx);   // FIX
@@ -258,6 +265,9 @@ function setTrainingFormValues(t) {
   set('squat', t.Squat);
   set('sit_up', t.SitUp);
   set('trazioni', t.Trazioni);
+  set('infortuni', t.Infortuni);
+  set('patologie', t.Patologie);
+  set('esperienze_sportive', t.EsperienzeSportive);
 }
 
 function startEditTraining(id) {
@@ -308,6 +318,9 @@ ipc.on('client:get:success', (client) => {
   const parts = [];
   if (client?.phone) parts.push(client.phone);
   clientMetaEl.textContent = parts.join(' • ');
+  if (clientDobEl) clientDobEl.textContent = client?.DataNascita ? `Data di nascita: ${client.DataNascita}` : '';
+  document.getElementById('client-birth-date').textContent =
+    client.birth_date || '—';
 });
 
 ipc.on('client:get:error', (message) => {
@@ -380,6 +393,9 @@ form.addEventListener('submit', (e) => {
     Alimentazione: data.alimentazione || '',
     Obbiettivo: data.obiettivo || '',
     FrequenzaAllenamento: data.frequenza_allenamento || '',
+    Infortuni: data.infortuni || '',
+    Patologie: data.patologie || '',
+    EsperienzeSportive: data.esperienze_sportive || '',
     SitAndReach: toIntOrNull(data.sit_and_reach),
     SideBendDx: toIntOrNull(data.side_bend_dx),
     SideBendSx: toIntOrNull(data.side_bend_sx),
@@ -389,7 +405,8 @@ form.addEventListener('submit', (e) => {
     PiegamentiBraccia: toIntOrNull(data.piegamenti_braccia),
     Squat: toIntOrNull(data.squat),
     SitUp: toIntOrNull(data.sit_up),
-    Trazioni: toIntOrNull(data.trazioni)
+    Trazioni: toIntOrNull(data.trazioni),
+
   };
 
   // Frequenze Cooper -> JSON
@@ -404,182 +421,163 @@ form.addEventListener('submit', (e) => {
 });
 
 // =========================
-// SEZIONE: Test Cooper (modale)
-// - Config step
-// - Aggiunta/rinumerazione righe
-// - Get/Set array frequenze cardiache
+// SEZIONE: Test Cooper (modale) - versione con UN solo riposo finale
 // =========================
-const cooperCfg = { baseSpeed: 8.5, baseTime: 0, stepSpeed: 1, stepTime: 2 };
-const cooperRowsTbody = document.getElementById('cooper-rows');
-const cooperAddBtn = document.getElementById('cooper-add');
+const cooperRowsTbody = document.getElementById('cooper-rows-tbody');
+const cooperAddBtn = document.getElementById('cooper-add-btn');
 
-function cooperSpeedAt(i) { return cooperCfg.baseSpeed + i * cooperCfg.stepSpeed; }
-function cooperTimeAt(i) { return cooperCfg.baseTime + i * cooperCfg.stepTime; }
+function cooperSpeedAt(stepIndex) { return 8 + stepIndex * 1; }      // adattabile
+function cooperTimeAt(stepIndex) { return (stepIndex + 1) * 2; }      // adattabile
 
-// type: 'exercise' | 'rest'
-function addCooperRow(type = 'exercise', initialHR) {
-  if (!cooperRowsTbody) return;
-
-  const tr = document.createElement('tr');
-  tr.dataset.type = type;
-
-  const tdIdxOrLabel = document.createElement('td');
-  const tdSpeed = document.createElement('td');
-  const tdTime = document.createElement('td');
-  const tdHR = document.createElement('td');
-  const tdActions = document.createElement('td');
-
-  // Input HR
+function createHRInput(initialHR) {
   const input = document.createElement('input');
   input.type = 'number';
   input.min = '0';
   input.step = '1';
+  input.className = 'form-control form-control-sm';
   input.placeholder = 'bpm';
   if (typeof initialHR === 'number' && Number.isFinite(initialHR)) input.value = String(initialHR);
-  tdHR.appendChild(input);
+  return input;
+}
 
-  // Actions
+function addCooperExerciseRow(initialHR) {
+  if (!cooperRowsTbody) return;
+  const tr = document.createElement('tr');
+  tr.dataset.type = 'exercise';
+
+  tr.innerHTML = `
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  `;
+  const hrInput = createHRInput(initialHR);
+  tr.children[3].appendChild(hrInput);
+
   const rm = document.createElement('button');
   rm.type = 'button';
   rm.textContent = 'Rimuovi';
+  rm.className = 'btn btn-outline-danger btn-sm';
+  rm.addEventListener('click', () => {
+    tr.remove();
+    if (!hasExerciseRows()) {
+      addCooperExerciseRow(); // mantieni almeno uno
+    }
+    renumberCooperRows();
+  });
+  tr.children[4].appendChild(rm);
 
-  if (type === 'exercise') {
-    // Rimuove anche il successivo 'rest' (se presente)
-    rm.addEventListener('click', () => {
-      const next = tr.nextElementSibling;
-      tr.remove();
-      if (next && next.dataset.type === 'rest') next.remove();
-      renumberCooperRows();
-    });
-  } else {
-    // Nessun pulsante rimuovi per il riposo per mantenere le coppie consistenti
-    rm.style.display = 'none';
-  }
-  tdActions.appendChild(rm);
+  // Inserisci prima della riga riposo se esiste
+  const restRow = cooperRowsTbody.querySelector('tr[data-type="rest"]');
+  if (restRow) cooperRowsTbody.insertBefore(tr, restRow);
+  else cooperRowsTbody.appendChild(tr);
 
-  tr.append(tdIdxOrLabel, tdSpeed, tdTime, tdHR, tdActions);
-  cooperRowsTbody.appendChild(tr);
+  ensureRestRow();
   renumberCooperRows();
 }
 
-function addCooperPair(exHR, restHR) {
-  addCooperRow('exercise', exHR);
-  addCooperRow('rest', restHR);
+function ensureRestRow(initialHR) {
+  if (!cooperRowsTbody) return;
+  let rest = cooperRowsTbody.querySelector('tr[data-type="rest"]');
+  if (!rest) {
+    rest = document.createElement('tr');
+    rest.dataset.type = 'rest';
+    rest.innerHTML = `
+      <td>Riposo</td>
+      <td>—</td>
+      <td>—</td>
+      <td></td>
+      <td></td>
+    `;
+    rest.children[3].appendChild(createHRInput(initialHR));
+    cooperRowsTbody.appendChild(rest);
+  } else if (initialHR !== undefined && Number.isFinite(initialHR)) {
+    const inp = rest.querySelector('input');
+    if (inp) inp.value = String(initialHR);
+  }
+}
+
+function hasExerciseRows() {
+  return !!cooperRowsTbody.querySelector('tr[data-type="exercise"]');
 }
 
 function renumberCooperRows() {
   if (!cooperRowsTbody) return;
-  let exerciseIndex = 0;
-  [...cooperRowsTbody.children].forEach((tr) => {
-    const type = tr.dataset.type;
-    if (type === 'exercise') {
-      const i = exerciseIndex++;
-      tr.children[0].textContent = String(i + 1);
-      tr.children[1].textContent = `${cooperSpeedAt(i).toFixed(1)} Km/h`;
-      tr.children[2].textContent = `${cooperTimeAt(i)} min`;
-    } else {
-      tr.children[0].textContent = 'Riposo';
-      tr.children[1].textContent = '—';
-      tr.children[2].textContent = '—';
-    }
+  const exerciseRows = [...cooperRowsTbody.querySelectorAll('tr[data-type="exercise"]')];
+  exerciseRows.forEach((tr, i) => {
+    tr.children[0].textContent = String(i + 1);
+    tr.children[1].textContent = `${cooperSpeedAt(i).toFixed(1)} Km/h`;
+    tr.children[2].textContent = `${cooperTimeAt(i)} min`;
   });
 }
 
 function getCooperHRs() {
   if (!cooperRowsTbody) return [];
-  const vals = [];
-  [...cooperRowsTbody.querySelectorAll('input[type="number"]')].forEach((inp) => {
-    const n = Number(inp.value);
-    if (Number.isFinite(n)) vals.push(n);
-  });
-  return vals;
+  const exerciseHR = [...cooperRowsTbody.querySelectorAll('tr[data-type="exercise"] input')]
+    .map(inp => {
+      const n = Number(inp.value);
+      return Number.isFinite(n) ? n : null;
+    })
+    .filter(v => v !== null);
+  const restInp = cooperRowsTbody.querySelector('tr[data-type="rest"] input');
+  const restHR = restInp ? Number(restInp.value) : null;
+  const arr = exerciseHR.slice();
+  if (Number.isFinite(restHR)) arr.push(restHR);
+  return arr;
 }
 
+// Array: [HR esercizio 1, HR esercizio 2, ..., HR esercizio N, HR riposo finale]
 function setCooperHRs(arr = []) {
   if (!cooperRowsTbody) return;
   cooperRowsTbody.innerHTML = '';
   const list = Array.isArray(arr) ? arr : [];
   if (list.length === 0) {
-    // default: una coppia Step + Riposo
-    addCooperPair();
+    addCooperExerciseRow();
+    ensureRestRow();
   } else {
-    for (let i = 0; i < list.length; i += 2) {
-      const ex = Number(list[i]);
-      const rest = Number(list[i + 1]);
-      addCooperPair(Number.isFinite(ex) ? ex : undefined, Number.isFinite(rest) ? rest : undefined);
-    }
+    // Ultimo valore = riposo
+    const restValue = list[list.length - 1];
+    const exerciseValues = list.slice(0, -1);
+    if (exerciseValues.length === 0) exerciseValues.push(undefined);
+    exerciseValues.forEach(v => addCooperExerciseRow(v));
+    ensureRestRow(restValue);
   }
+  renumberCooperRows();
 }
 
-cooperAddBtn?.addEventListener('click', () => addCooperPair());
+cooperAddBtn?.addEventListener('click', () => addCooperExerciseRow());
 
+// Inizializzazione
 document.addEventListener('DOMContentLoaded', () => {
-  // se nuovo form, almeno una riga
   if (cooperRowsTbody && cooperRowsTbody.children.length === 0) setCooperHRs([]);
 });
 
-// --- Integrazione caricamento scheda nel form (se presente) ---
-function loadTrainingIntoForm(training) {
-  // ...existing code...
-  try {
-    const arr = training?.CooperFreq ? JSON.parse(training.CooperFreq) : [];
-    setCooperHRs(Array.isArray(arr) ? arr : []);
-  } catch {
-    setCooperHRs([]);
-  }
-  // ...existing code...
-}
-// Se la tua implementazione usa un altro loader, inserisci il blocco sopra dove valorizzi gli input del form
-
-// --- Integrazione nel submit del form: aggiungi CooperFreq al payload ---
-// RIMUOVERE il listener duplicato qui sotto (usava "payload" non definito)
-// const trainingForm = document.getElementById('training-form');
-// trainingForm?.addEventListener('submit', (e) => { ... });
-
-// --- Rendering nella card della scheda salvata ---
-// =========================
-// SEZIONE: Render Test Cooper (card)
-// - Converte il JSON salvato in tabella Bootstrap
-// =========================
+// Rendering in card (interpreta ultimo elemento come riposo)
 function cooperTableHtmlFromJSON(cooperJson) {
   let arr = [];
   try { arr = JSON.parse(cooperJson || '[]'); } catch { arr = []; }
   if (!Array.isArray(arr) || arr.length === 0) return '';
-  const rows = arr.map((hr, i) => {
-    if (i % 2 === 0) {
-      // esercizio
-      const step = Math.floor(i / 2);
-      const v = cooperSpeedAt(step).toFixed(1);
-      const t = cooperTimeAt(step);
-      return `<tr><td>${step + 1}</td><td>${v} Km/h</td><td>${t} min</td><td>${hr} bpm</td></tr>`;
-    }
-    // riposo
-    return `<tr><td>Riposo</td><td>—</td><td>—</td><td>${hr} bpm</td></tr>`;
-  }).join('');
+  const restHR = arr.length > 1 ? arr[arr.length - 1] : null;
+  const exerciseHR = restHR !== null ? arr.slice(0, -1) : arr;
+  const rows = exerciseHR.map((hr, i) => {
+    return `<tr><td>${i + 1}</td><td>${cooperSpeedAt(i).toFixed(1)} Km/h</td><td>${cooperTimeAt(i)} min</td><td>${hr} bpm</td></tr>`;
+  }).join('') + (Number.isFinite(restHR)
+    ? `<tr><td>Riposo</td><td>—</td><td>—</td><td>${restHR} bpm</td></tr>`
+    : '');
   return `
-    <div class="card-section-title">Test Cooper</div>
-    <div class="table-responsive">
-      <table class="table table-dark table-striped table-hover table-sm mb-2">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Velocità (Km/h)</th>
-            <th>Tempo (min)</th>
-            <th>FC (bpm)</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+    <div class="card-section">
+      <div class="card-section-title">Test Cooper</div>
+      <div class="table-responsive">
+        <table class="table table-dark table-striped table-hover table-sm mb-2">
+          <thead>
+            <tr>
+              <th>#</th><th>Velocità (Km/h)</th><th>Tempo (min)</th><th>FC (bpm)</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     </div>
   `;
 }
-
-// Integra nella funzione che rende la card (aggiungi dove compili l’HTML della scheda)
-// (Esempio opzionale) Render alternativo della card singola
-function renderTrainingCard(training) {
-  // ...existing code che costruisce html della card...
-  const cooperHtml = cooperTableHtmlFromJSON(training.CooperFreq);
-  html += cooperHtml;
-  // ...existing code...
-}
-// Se usi un template diverso, inserisci cooperHtml nel punto in cui mostri i dettagli della scheda

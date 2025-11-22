@@ -1,30 +1,15 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../db/sqlite');
 
-const Client = sequelize.define('Client', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-
-    surname: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-
-    phone: {
-        type: DataTypes.STRING,
-        allowNull: true
+class Client {
+    constructor(row) {
+        this.id = row.id;
+        this.name = row.name;
+        this.email = row.email;
+        this.surname = row.surname;
+        this.phone = row.phone;
+        this.birth_date = row.birth_date;
     }
-
-}, {
-    tableName: 'clients',
-    timestamps: true
-});
+}
 
 module.exports = Client;

@@ -51,6 +51,15 @@ function ensureColumn(table, column, type) {
 ensureColumn('training_plans', 'side_bend_dx', 'REAL');
 ensureColumn('training_plans', 'side_bend_sx', 'REAL');
 
+try {
+  const cols = db.prepare(`PRAGMA table_info(clients)`).all().map(c => c.name);
+  if (!cols.includes('birth_date')) {
+    db.prepare(`ALTER TABLE clients ADD COLUMN birth_date TEXT`).run();
+  }
+} catch (e) {
+  console.error('Errore aggiunta colonna birth_date:', e);
+}
+
 // Esempi funzioni
 function insertClient(client) {
     const stmt = db.prepare('INSERT INTO clients (name, surname, phone) VALUES (?, ?, ?)');

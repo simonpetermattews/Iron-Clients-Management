@@ -8,7 +8,8 @@
     "test": "jest",
     "build": "electron-builder",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "migrate": "node scripts/migrate.js"
   },
   "keywords": [
     "electron",

@@ -1,39 +1,56 @@
 const db = require('../db/sqlite');
 const Client = require('../models/client');
 
-const createClient = async (clientData) => {
-    const client = new Client(clientData);
-    if (!client.isValid()) {
-        throw new Error('Invalid client data');
-    }
-    const query = 'INSERT INTO clients (name,  phone) VALUES (?, ?, ?)';
-    const params = [client.name, client. client.phone];
-    await db.run(query, params);
-};
+function createClient(data) {
+  const stmt = db.prepare(
+    `INSERT INTO clients (name, email, phone, birth_date)
+     VALUES (?, ?, ?, ?)`
+  );
+  const info = stmt.run(
+    data.name,
+    data.email,
+    data.phone,
+    data.birth_date || null
+  );
+  return getClientById(info.lastInsertRowid);
+}
 
-const getClients = async () => {
-    const query = 'SELECT * FROM clients';
-    return await db.all(query);
-};
+function getAllClients() {
+  return db
+    .prepare(`SELECT * FROM clients ORDER BY id DESC`)
+    .all()
+    .map(row => new Client(row));
+}
 
-const updateClient = async (id, clientData) => {
-    const client = new Client(clientData);
-    if (!client.isValid()) {
-        throw new Error('Invalid client data');
-    }
-    const query = 'UPDATE clients SET name = ? , phone = ? WHERE id = ?';
-    const params = [client.name, client.phone, id];
-    await db.run(query, params);
-};
+function getClientById(id) {
+  const row = db.prepare(`SELECT * FROM clients WHERE id = ?`).get(id);
+  return row ? new Client(row) : null;
+}
 
-const deleteClient = async (id) => {
-    const query = 'DELETE FROM clients WHERE id = ?';
-    await db.run(query, [id]);
-};
+function updateClient(id, data) {
+  const stmt = db.prepare(
+    `UPDATE clients
+     SET name = ?, email = ?, phone = ?, birth_date = ?
+     WHERE id = ?`
+  );
+  stmt.run(
+    data.name,
+    data.email,
+    data.phone,
+    data.birth_date || null,
+    id
+  );
+  return getClientById(id);
+}
+
+function deleteClient(id) {
+  db.prepare(`DELETE FROM clients WHERE id = ?`).run(id);
+}
 
 module.exports = {
-    createClient,
-    getClients,
-    updateClient,
-    deleteClient
+  createClient,
+  getAllClients,
+  getClientById,
+  updateClient,
+  deleteClient,
 };

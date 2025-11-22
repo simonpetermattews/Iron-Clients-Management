@@ -18,6 +18,8 @@
         Torna all’elenco</a>
       <h1 id="client-name" class="mt-2 mb-1">Cliente</h1>
       <div class="muted" id="client-meta"></div>
+      <div class="muted" id="client-dob"></div>
+      <p><strong>Data di nascita:</strong> <span id="client-birth-date"></span></p>
 
       <div
         class="col-12 d-flex justify-content-center align-items-center">
@@ -32,110 +34,89 @@
             aria-label="Chiudi">×</button>
           <h2 id="modal-title">Nuova scheda allenamento</h2>
           <form id="training-form" class="row g-3">
-            <div class="col-12"><h3 class="section-title h5">Dati
-                Anagrafici</h3></div>
+            <div class="col-12"><h3 class="section-title h5">Dati Anagrafici</h3></div>
             <div class="col-12 col-md-6">
-              <label class="form-label" for="altezza">Altezza</label>
-              <input class="form-control" id="altezza" type="number"
-                name="altezza" />
+              <label class="form-label" for="altezza">Altezza (cm)</label>
+              <input class="form-control" id="altezza" name="altezza" type="number" step="any" inputmode="decimal" />
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label" for="peso">Peso</label>
-              <input class="form-control" id="peso" type="number" name="peso" />
+              <label class="form-label" for="peso">Peso (kg)</label>
+              <input class="form-control" id="peso" name="peso" type="number" step="any" inputmode="decimal" />
             </div>
 
-            <div class="col-12"><h3
-                class="section-title h5">Circonferenze</h3></div>
+            <div class="col-12"><h3 class="section-title h5">Circonferenze</h3></div>
             <div class="col-12 col-md-6">
-              <label class="form-label" for="circonferenza_torace">Circonferenza
-                Torace (cm)</label>
-              <input class="form-control" id="circonferenza_torace"
-                type="number" name="circonferenza_torace" />
+              <label class="form-label" for="circonferenza_torace">Circonferenza Torace (cm)</label>
+              <input class="form-control" id="circonferenza_torace" name="circonferenza_torace" type="number" step="any" inputmode="decimal" />
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label" for="circonferenza_vita">Circonferenza
-                Vita (cm)</label>
-              <input class="form-control" id="circonferenza_vita" type="number"
-                name="circonferenza_vita" />
+              <label class="form-label" for="circonferenza_vita">Circonferenza Vita (cm)</label>
+              <input class="form-control" id="circonferenza_vita" name="circonferenza_vita" type="number" step="any" inputmode="decimal" />
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label"
-                for="circonferenza_ombelicale">Circonferenza Ombelicale
-                (cm)</label>
-              <input class="form-control" id="circonferenza_ombelicale"
-                type="number" name="circonferenza_ombelicale" />
+              <label class="form-label" for="circonferenza_ombelicale">Circonferenza Ombelicale (cm)</label>
+              <input class="form-control" id="circonferenza_ombelicale" name="circonferenza_ombelicale" type="number" step="any" inputmode="decimal" />
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label"
-                for="circonferenza_fianchi">Circonferenza Fianchi (cm)</label>
-              <input class="form-control" id="circonferenza_fianchi"
-                type="number" name="circonferenza_fianchi" />
+              <label class="form-label" for="circonferenza_fianchi">Circonferenza Fianchi (cm)</label>
+              <input class="form-control" id="circonferenza_fianchi" name="circonferenza_fianchi" type="number" step="any" inputmode="decimal" />
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label"
-                for="circonferenza_braccio_dx">Circonferenza Braccio Dx
-                (cm)</label>
-              <input class="form-control" id="circonferenza_braccio_dx"
-                type="number" name="circonferenza_braccio_dx" />
+              <label class="form-label" for="circonferenza_braccio_dx">Circonferenza Braccio Dx (cm)</label>
+              <input class="form-control" id="circonferenza_braccio_dx" name="circonferenza_braccio_dx" type="number" step="any" inputmode="decimal" />
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label"
-                for="circonferenza_braccio_sx">Circonferenza Braccio Sx
-                (cm)</label>
-              <input class="form-control" id="circonferenza_braccio_sx"
-                type="number" name="circonferenza_braccio_sx" />
+              <label class="form-label" for="circonferenza_braccio_sx">Circonferenza Braccio Sx (cm)</label>
+              <input class="form-control" id="circonferenza_braccio_sx" name="circonferenza_braccio_sx" type="number" step="any" inputmode="decimal" />
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label"
-                for="circonferenza_gamba_dx">Circonferenza Gamba Dx (cm)</label>
-              <input class="form-control" id="circonferenza_gamba_dx"
-                type="number" name="circonferenza_gamba_dx" />
+              <label class="form-label" for="circonferenza_gamba_dx">Circonferenza Gamba Dx (cm)</label>
+              <input class="form-control" id="circonferenza_gamba_dx" name="circonferenza_gamba_dx" type="number" step="any" inputmode="decimal" />
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label"
-                for="circonferenza_gamba_sx">Circonferenza Gamba Sx (cm)</label>
-              <input class="form-control" id="circonferenza_gamba_sx"
-                type="number" name="circonferenza_gamba_sx" />
+              <label class="form-label" for="circonferenza_gamba_sx">Circonferenza Gamba Sx (cm)</label>
+              <input class="form-control" id="circonferenza_gamba_sx" name="circonferenza_gamba_sx" type="number" step="any" inputmode="decimal" />
             </div>
 
-            <div class="col-12"><h3 class="section-title h5">Stile di
-                vita</h3></div>
+            <div class="col-12"><h3 class="section-title h5">Stile di vita</h3></div>
             <div class="col-12 col-md-6">
-              <label class="form-label" for="idratazione">Idratazione
-                (lt)</label>
-              <input class="form-control" id="idratazione" type="number"
-                name="idratazione" />
+              <label class="form-label" for="idratazione">Idratazione (lt)</label>
+              <input class="form-control" id="idratazione" name="idratazione" type="number"  step="any" inputmode="decimal" />
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label" for="ore_di_sonno">Ore di sonno</label>
-              <input class="form-control" id="ore_di_sonno" type="number"
-                name="ore_di_sonno" />
+              <input class="form-control" id="ore_di_sonno" name="ore_di_sonno" type="number" />
             </div>
             <div class="col-12">
-              <label class="form-label"
-                for="alimentazione">Alimentazione</label>
-              <textarea class="form-control" id="alimentazione"
-                name="alimentazione" rows="3"></textarea>
+              <label class="form-label" for="alimentazione">Alimentazione</label>
+              <textarea class="form-control" id="alimentazione" name="alimentazione" rows="2"></textarea>
             </div>
             <div class="col-12">
               <label class="form-label" for="obiettivo">Obiettivo</label>
-              <textarea class="form-control" id="obiettivo" name="obiettivo"
-                rows="3"></textarea>
+              <textarea class="form-control" id="obiettivo" name="obiettivo" rows="2"></textarea>
             </div>
             <div class="col-12">
-              <label class="form-label" for="frequenza_allenamento">Frequenza
-                Allenamento</label>
-              <input class="form-control" id="frequenza_allenamento" type="text"
-                name="frequenza_allenamento" />
+              <label class="form-label" for="frequenza_allenamento">Frequenza Allenamento</label>
+              <input class="form-control" id="frequenza_allenamento" name="frequenza_allenamento" type="text" />
             </div>
 
-            <div class="col-12"><h3 class="section-title h5">Test
-                Fisici</h3></div>
+            <div class="col-12"><h3 class="section-title h5">Infortuni e Patologie</h3></div>
+            <div class="col-12">
+              <label class="form-label" for="infortuni">Infortuni</label>
+              <textarea class="form-control" id="infortuni" name="infortuni" rows="2"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="patologie">Patologie</label>
+              <textarea class="form-control" id="patologie" name="patologie" rows="2"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="esperienze_sportive">Esperienze sportive</label>
+              <textarea class="form-control" id="esperienze_sportive" name="esperienze_sportive" rows="2"></textarea>
+            </div>
+            <div class="col-12"><h3 class="section-title h5">Test Fisici</h3></div>
             <div class="col-12 col-md-6">
-              <label class="form-label" for="sit_and_reach">Sit and
-                Reach</label>
-              <input class="form-control" id="sit_and_reach" type="number"
-                name="sit_and_reach" />
+              <label class="form-label" for="sit_and_reach">Sit and Reach</label>
+              <input class="form-control" id="sit_and_reach" name="sit_and_reach" type="number" />
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label" for="side_bend_dx">Side Bend Dx</label>
@@ -185,30 +166,27 @@
                 name="trazioni" />
             </div>
 
+
+            
+
             <!-- Test Cooper -->
-            <div class="col-12"><h3 class="section-title h5">Test
-                Cooper</h3></div>
-            <div class="col-12 d-flex justify-content-end">
-              <button id="cooper-add" type="button"
-                class="btn btn-sm btn-outline-light">Aggiungi step</button>
-            </div>
             <div class="col-12">
-              <table
-                class="table table-dark table-striped table-hover table-sm mb-2"
-                id="cooper-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Velocità (Km/h)</th>
-                    <th>Tempo (min)</th>
-                    <th>Frequenza cardiaca (bpm)</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="cooper-rows"></tbody>
-              </table>
-              <small class="muted">Velocità iniziale 8,5 Km/h, Tempo iniziale 0
-                min. Ogni step: +1 Km/h, +2 min.</small>
+              <h3 class="section-title h5">Test Cooper</h3>
+              <div class="table-responsive">
+                <table class="table table-dark table-sm mb-2">
+                  <thead>
+                    <tr>
+                      <th>Step</th>
+                      <th>Velocità (Km/h)</th>
+                      <th>Tempo (min)</th>
+                      <th>FC (bpm)</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="cooper-rows-tbody"></tbody>
+                </table>
+              </div>
+              <button type="button" id="cooper-add-btn" class="btn btn-secondary btn-sm">Aggiungi Step</button>
             </div>
 
             <div class="col-12 d-flex justify-content-end gap-2 mt-2">

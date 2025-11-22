@@ -50,13 +50,6 @@ try {
 // Ensure schema (clients + training_plans con migrazione colonne)
 function ensureSchema(db) {
   db.exec(`
-    CREATE TABLE IF NOT EXISTS clients (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      surname TEXT,
-      phone TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
     CREATE TABLE IF NOT EXISTS training_plans (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       client_id INTEGER NOT NULL,
@@ -68,8 +61,9 @@ function ensureSchema(db) {
       CirconferenzaTorace REAL, CirconferenzaVita REAL, CirconferenzaOmbelicale REAL, CirconferenzaFianchi REAL,
       CirconferenzaBraccioDx REAL, CirconferenzaBraccioSx REAL, CirconferenzaGambaDx REAL, CirconferenzaGambaSx REAL,
       Idratazione REAL, OreDiSonno REAL, Alimentazione TEXT, Obbiettivo TEXT, FrequenzaAllenamento TEXT,
+      Infortuni TEXT, Patologie TEXT, EsperienzeSportive TEXT,
       SitAndReach REAL, SideBendDx REAL, SideBendSx REAL, FlessibilitaSpalla REAL, FlamingoDx REAL, FlamingoSx REAL,
-      PiegamentiBraccia INTEGER, Squat INTEGER, SitUp INTEGER, Trazioni INTEGER,CooperFreq TEXT,
+      PiegamentiBraccia INTEGER, Squat INTEGER, SitUp INTEGER, Trazioni INTEGER, CooperFreq TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME,
       FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
@@ -77,49 +71,79 @@ function ensureSchema(db) {
     CREATE INDEX IF NOT EXISTS idx_training_plans_client_id ON training_plans(client_id);
   `);
 
-  // Migrazione colonne mancanti (se DB già esiste)
   const colTypes = new Map([
     ['client_id', 'INTEGER'], ['title', 'TEXT'], ['notes', 'TEXT'], ['date', 'TEXT'], ['exercises', 'TEXT'],
     ['Altezza', 'REAL'], ['Peso', 'REAL'],
     ['CirconferenzaTorace', 'REAL'], ['CirconferenzaVita', 'REAL'], ['CirconferenzaOmbelicale', 'REAL'], ['CirconferenzaFianchi', 'REAL'],
     ['CirconferenzaBraccioDx', 'REAL'], ['CirconferenzaBraccioSx', 'REAL'], ['CirconferenzaGambaDx', 'REAL'], ['CirconferenzaGambaSx', 'REAL'],
     ['Idratazione', 'REAL'], ['OreDiSonno', 'REAL'], ['Alimentazione', 'TEXT'], ['Obbiettivo', 'TEXT'], ['FrequenzaAllenamento', 'TEXT'],
-    ['SitAndReach', 'REAL'], ['SideBendDx', 'REAL'],['SideBendSx', 'REAL'], ['FlessibilitaSpalla', 'REAL'], ['FlamingoDx', 'REAL'], ['FlamingoSx', 'REAL'],
-    ['PiegamentiBraccia', 'INTEGER'], ['Squat', 'INTEGER'], ['SitUp', 'INTEGER'], ['Trazioni', 'INTEGER'],['CooperFreq', 'TEXT'],
-    ['created_at', 'DATETIME'], ['updated_at', 'DATETIME'],
+    ['Infortuni', 'TEXT'], ['Patologie', 'TEXT'], ['EsperienzeSportive', 'TEXT'],
+    ['SitAndReach', 'REAL'], ['SideBendDx', 'REAL'], ['SideBendSx', 'REAL'], ['FlessibilitaSpalla', 'REAL'], ['FlamingoDx', 'REAL'], ['FlamingoSx', 'REAL'],
+    ['PiegamentiBraccia', 'INTEGER'], ['Squat', 'INTEGER'], ['SitUp', 'INTEGER'], ['Trazioni', 'INTEGER'], ['CooperFreq', 'TEXT'],
+    ['created_at', 'DATETIME'], ['updated_at', 'DATETIME']
   ]);
   const existing = new Set(db.prepare("PRAGMA table_info('training_plans')").all().map(r => r.name));
+  // Fix nome errato
+  if (existing.has('EsperienzeSportivo') && !existing.has('EsperienzeSportive')) {
+    try { db.exec(`ALTER TABLE training_plans RENAME COLUMN EsperienzeSportivo TO EsperienzeSportive`); } catch { }
+    existing.add('EsperienzeSportive');
+  }
   for (const [col, type] of colTypes) {
-    if (!existing.has(col)) {
-      db.exec(`ALTER TABLE training_plans ADD COLUMN ${col} ${type}`);
-    }
+    if (!existing.has(col)) db.exec(`ALTER TABLE training_plans ADD COLUMN ${col} ${type}`);
+  }
+
+  // Clients: aggiunta colonna DataNascita se manca
+  const clientCols = new Set(db.prepare("PRAGMA table_info('clients')").all().map(r => r.name));
+  if (!clientCols.has('DataNascita')) {
+    try { db.exec("ALTER TABLE clients ADD COLUMN DataNascita TEXT"); } catch {}
+  }
+  if (!clientCols.has('birth_date')) {
+    try { db.exec("ALTER TABLE clients ADD COLUMN birth_date TEXT"); } catch {}
   }
 }
 ensureSchema(db);
 
 // Example exports (adatta se già presenti)
 function insertClient(client) {
-  const stmt = db.prepare('INSERT INTO clients (name, surname, phone) VALUES (?, ?, ?)');
-  const info = stmt.run(client.name, client.surname || null, client.phone || null);
+  const stmt = db.prepare(`
+    INSERT INTO clients (name, surname, phone, DataNascita)
+    VALUES (@name, @surname, @phone, @DataNascita)
+  `);
+  const info = stmt.run({
+    name: client.name,
+    surname: client.surname,
+    phone: client.phone || null,
+    DataNascita: client.DataNascita || null
+  });
   return info.lastInsertRowid;
 }
 
 function getClient(id) {
-  return db.prepare('SELECT * FROM clients WHERE id = ?').get(id);
+  return db.prepare(`SELECT id, name, surname, phone, DataNascita, created_at, updated_at FROM clients WHERE id = ?`).get(id);
 }
 
 function listClients() {
-  return db.prepare('SELECT * FROM clients ORDER BY id DESC').all();
+  return db.prepare(`SELECT id, name, surname, phone, DataNascita, created_at, updated_at FROM clients ORDER BY id DESC`).all();
 }
 
 function updateClient(id, data) {
   const stmt = db.prepare(`
     UPDATE clients
-       SET name = ?, surname = ?, phone = ?
-     WHERE id = ?
+    SET name = @name,
+        surname = @surname,
+        phone = @phone,
+        DataNascita = @DataNascita,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = @id
   `);
-  const info = stmt.run(data.name, data.surname || null, data.phone || null, id);
-  return info.changes > 0;
+  stmt.run({
+    id,
+    name: data.name,
+    surname: data.surname,
+    phone: data.phone || null,
+    DataNascita: data.DataNascita || null
+  });
+  return getClient(id);
 }
 
 function deleteClient(id) {
@@ -207,7 +231,12 @@ module.exports = {
 // Leggi tutti i clienti
 ipcMain.on('client:read', (event) => {
   try {
-    const rows = db.prepare('SELECT id, name, surname, phone FROM clients ORDER BY id DESC').all();
+    const rows = db.prepare(`
+      SELECT id, name, surname, phone,
+             COALESCE(birth_date, DataNascita) AS birth_date
+      FROM clients
+      ORDER BY id DESC
+    `).all();
     event.sender.send('client:read:success', rows);
   } catch (err) {
     event.sender.send('client:read:error', err.message || 'Errore lettura clienti');
@@ -219,7 +248,12 @@ ipcMain.on('client:get', (event, payload = {}) => {
   try {
     const id = Number(payload?.clientId ?? payload?.id ?? payload);
     if (!id) throw new Error('ID mancante');
-    const row = db.prepare('SELECT id, name, surname, phone FROM clients WHERE id = ?').get(id);
+    const row = db.prepare(`
+      SELECT id, name, surname, phone,
+             COALESCE(birth_date, DataNascita) AS birth_date
+      FROM clients
+      WHERE id = ?
+    `).get(id);
     if (!row) throw new Error('Cliente non trovato');
     event.sender.send('client:get:success', row);
   } catch (err) {
@@ -231,11 +265,14 @@ ipcMain.on('client:get', (event, payload = {}) => {
 ipcMain.on('client:create', (event, payload = {}) => {
   try {
     const name = String(payload.name || '').trim();
+    if (!name) throw new Error('Nome obbligatorio');
     const surname = String(payload.surname || '').trim();
     const phone = String(payload.phone || '').trim();
-    if (!name) throw new Error('Nome obbligatorio');
-
-    db.prepare('INSERT INTO clients (name, surname, phone) VALUES (?, ?, ?)').run(name, surname, phone);
+    const birth_date = payload.birth_date || payload.DataNascita || null;
+    db.prepare(`
+      INSERT INTO clients (name, surname, phone, DataNascita, birth_date)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(name, surname, phone, birth_date, birth_date);
     event.sender.send('client:create:success');
   } catch (err) {
     event.sender.send('client:create:error', err.message || 'Errore creazione cliente');
@@ -247,16 +284,17 @@ ipcMain.on('client:update', (event, payload = {}) => {
   try {
     const id = Number(payload.id);
     if (!id) throw new Error('ID mancante');
-
     const name = String(payload.name || '').trim();
+    if (!name) throw new Error('Nome obbligatorio');
     const surname = String(payload.surname || '').trim();
     const phone = String(payload.phone || '').trim();
-    if (!name) throw new Error('Nome obbligatorio');
-
-    const info = db.prepare('UPDATE clients SET name=?, surname=?, phone=? WHERE id=?')
-      .run(name, surname, phone, id);
+    const birth_date = payload.birth_date || payload.DataNascita || null;
+    const info = db.prepare(`
+      UPDATE clients
+         SET name = ?, surname = ?, phone = ?, DataNascita = ?, birth_date = ?
+       WHERE id = ?
+    `).run(name, surname, phone, birth_date, birth_date, id);
     if (info.changes === 0) throw new Error('Cliente non trovato');
-
     event.sender.send('client:update:success');
   } catch (err) {
     event.sender.send('client:update:error', err.message || 'Errore aggiornamento cliente');
@@ -296,17 +334,18 @@ const TRAINING_FIELDS = [
   'CirconferenzaTorace', 'CirconferenzaVita', 'CirconferenzaOmbelicale', 'CirconferenzaFianchi',
   'CirconferenzaBraccioDx', 'CirconferenzaBraccioSx', 'CirconferenzaGambaDx', 'CirconferenzaGambaSx',
   'Idratazione', 'OreDiSonno', 'Alimentazione', 'Obbiettivo', 'FrequenzaAllenamento',
+  'Infortuni', 'Patologie', 'EsperienzeSportive',
   'SitAndReach', 'SideBendDx', 'SideBendSx', 'FlessibilitaSpalla', 'FlamingoDx', 'FlamingoSx',
-  'PiegamentiBraccia', 'Squat', 'SitUp', 'Trazioni','CooperFreq'
+  'PiegamentiBraccia', 'Squat', 'SitUp', 'Trazioni', 'CooperFreq'
 ];
 
 const NUM_FIELDS = new Set([
-  'Altezza','Peso',
-  'CirconferenzaTorace','CirconferenzaVita','CirconferenzaOmbelicale','CirconferenzaFianchi',
-  'CirconferenzaBraccioDx','CirconferenzaBraccioSx','CirconferenzaGambaDx','CirconferenzaGambaSx',
-  'Idratazione','OreDiSonno',
-  'SitAndReach','SideBendDx','SideBendSx','FlessibilitaSpalla','FlamingoDx','FlamingoSx',
-  'PiegamentiBraccia','Squat','SitUp','Trazioni'
+  'Altezza', 'Peso',
+  'CirconferenzaTorace', 'CirconferenzaVita', 'CirconferenzaOmbelicale', 'CirconferenzaFianchi',
+  'CirconferenzaBraccioDx', 'CirconferenzaBraccioSx', 'CirconferenzaGambaDx', 'CirconferenzaGambaSx',
+  'Idratazione', 'OreDiSonno',
+  'SitAndReach', 'SideBendDx', 'SideBendSx', 'FlessibilitaSpalla', 'FlamingoDx', 'FlamingoSx',
+  'PiegamentiBraccia', 'Squat', 'SitUp', 'Trazioni'
 ]);
 
 function numOrNull(v) {
