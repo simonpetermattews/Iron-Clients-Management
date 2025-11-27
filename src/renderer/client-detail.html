@@ -35,6 +35,18 @@
           <h2 id="modal-title">Nuova scheda allenamento</h2>
           <form id="training-form" class="row g-3">
             <div class="col-12"><h3 class="section-title h5">Dati Anagrafici</h3></div>
+
+            <!-- Nuovi campi titolo/data scheda -->
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="training-date">Data scheda</label>
+              <input class="form-control" id="training-date" name="date" type="date" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="training-title">Titolo scheda (opzionale)</label>
+              <input class="form-control" id="training-title" name="title" type="text" placeholder="Es. Scheda Forza" />
+            </div>
+            <!-- fine nuovi campi -->
+
             <div class="col-12 col-md-6">
               <label class="form-label" for="altezza">Altezza (cm)</label>
               <input class="form-control" id="altezza" name="altezza" type="number" step="any" inputmode="decimal" />

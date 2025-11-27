@@ -82,6 +82,18 @@ function safeToLocale(str) {
   return isNaN(d.getTime()) ? str : d.toLocaleString();
 }
 
+// Aggiungi: helper per titolo automatico basato sulla data
+function itDateString(s) {
+  if (!s) return new Date().toLocaleDateString('it-IT');
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + 'T00:00:00') : new Date(s);
+  return Number.isNaN(d.getTime()) ? new Date().toLocaleDateString('it-IT') : d.toLocaleDateString('it-IT');
+}
+function isAutoTitle(t) {
+  const base = t?.date || t?.created_at;
+  const expected = `Scheda ${itDateString(base)}`;
+  return String(t?.title || '').trim() === expected;
+}
+
 // Converte numerico o restituisce null
 function toIntOrNull(v) {
   if (v === '' || v === undefined || v === null) return null;
@@ -176,6 +188,7 @@ function renderTrainings(trainings = []) {
     const div = document.createElement('div');
     div.className = 'card';
     const createdAt = safeToLocale(t.created_at);
+    const displayTitle = t.title || createdAt || 'Scheda';
 
     const sectionsHtml = groups.map(g => {
       const rows = g.fields
@@ -209,7 +222,7 @@ function renderTrainings(trainings = []) {
 
     div.innerHTML = `
       <div class="card-title">
-        <span>${createdAt || 'Scheda'}</span>
+        <span>${displayTitle}</span>
         <span>
           <button type="button" class="training-edit" data-id="${t.id}">Modifica</button>
           <button type="button" class="training-delete" data-id="${t.id}" style="margin-left:6px;">Elimina</button>
@@ -232,11 +245,10 @@ function renderTrainings(trainings = []) {
 }
 
 function setTrainingFormValues(t) {
-  // =========================
-  // SEZIONE: Popolamento form (modifica)
-  // - Mappa i campi del record alle input del form
-  // =========================
   const set = (name, val) => { const el = form.elements[name]; if (el) el.value = val ?? ''; };
+  // nuovi campi titolo/data
+  set('date', t.date ? t.date.split('T')[0] : '');   // assume formato ISO/AAAA-MM-GG
+  set('title', t.title);
   set('altezza', t.Altezza);
   set('peso', t.Peso);
   set('circonferenza_torace', t.CirconferenzaTorace);
@@ -372,11 +384,24 @@ ipc.on('training:update:success', () => {
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(form).entries());
+
+  const rawDate = (data.date || '').trim();
+  const rawTitle = (data.title || '').trim();
+
+  // Se in modifica e il titolo era "automatico" e non toccato, forza rigenerazione
+  let titleToSend = rawTitle;
+  if (editingTrainingId) {
+    const original = currentTrainings.find(x => String(x.id) === String(editingTrainingId));
+    if (original && isAutoTitle(original) && rawTitle === (original.title || '')) {
+      titleToSend = ''; // il backend lo rigenera usando la nuova data
+    }
+  }
+
   const payload = {
     clientId,
-    title: `Scheda ${new Date().toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}`,
+    title: titleToSend || '',
+    date: rawDate || null,
     notes: '',
-    date: null,
     exercises: null,
     Altezza: toIntOrNull(data.altezza),
     Peso: toIntOrNull(data.peso),
@@ -405,11 +430,9 @@ form.addEventListener('submit', (e) => {
     PiegamentiBraccia: toIntOrNull(data.piegamenti_braccia),
     Squat: toIntOrNull(data.squat),
     SitUp: toIntOrNull(data.sit_up),
-    Trazioni: toIntOrNull(data.trazioni),
-
+    Trazioni: toIntOrNull(data.trazioni)
   };
 
-  // Frequenze Cooper -> JSON
   const cooper = getCooperHRs();
   payload.CooperFreq = JSON.stringify(Array.isArray(cooper) ? cooper : []);
 

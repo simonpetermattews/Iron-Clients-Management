@@ -389,9 +389,16 @@ function normalizeTrainingPayload(p = {}) {
   out.client_id = Number(out.clientId ?? out.client_id);
   delete out.clientId;
 
-  // titolo di default
+  // Titolo di default: se manca ma c'è la data, usa quella
   if (out.title === undefined || out.title === null || String(out.title).trim() === '') {
-    out.title = `Scheda ${new Date().toLocaleDateString('it-IT')}`;
+    let dt = null;
+    if (out.date) {
+      // supporta YYYY-MM-DD
+      dt = new Date(out.date);
+      if (Number.isNaN(dt.getTime())) dt = null;
+    }
+    if (!dt) dt = new Date();
+    out.title = `Scheda ${dt.toLocaleDateString('it-IT')}`;
   }
 
   return out;
