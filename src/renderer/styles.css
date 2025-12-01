@@ -202,19 +202,21 @@ form {
 form label {
     display: block;
     margin: 10px 0 5px;
+    font-weight: bold;
     color: var(--text);
 }
 
 form input[type="text"],
 form input[type="tel"],
 form input[type="number"],
+form input[type="date"],
 form select {
     width: 100%;
     padding: 10px;
     margin: 10px 0;
-    border: 1px solid #ccc;
+    background-color: #d6d6d6;
+    border: 2px solid var(--accent);
     border-radius: 4px;
-
 }
 
 form input[type="submit"] {
@@ -228,6 +230,12 @@ form input[type="submit"] {
 
 form input[type="submit"]:hover {
     background: var(--accent);
+}
+
+textarea {
+    background-color: #d6d6d6 !important;
+    border: 2px solid var(--accent) !important;
+    border-radius: 4px !important;
 }
 
 .table-dark {
@@ -256,7 +264,7 @@ form input[type="submit"]:hover {
     box-shadow: 5px 10px 10px rgb(0, 0, 0);
 }
 
-.client-list th,
+
 .client-list td {
     border: 1px solid #ddd;
     padding: 8px;
@@ -317,10 +325,11 @@ form input[type="submit"]:hover {
     cursor: pointer;
 }
 
-
-
-
-
+.training-text {
+  white-space: pre-wrap;      /* preserva \n e va a capo automaticamente */
+  word-break: break-word;     /* evita overflow */
+  overflow-wrap: anywhere;    /* spezza parole lunghissime */
+}
 
 @keyframes marquee {
     from {
@@ -399,4 +408,19 @@ body[data-page="client-detail"] .kv .k {
 
 body[data-page="client-detail"] .kv .v {
     font-size: .95rem;
+}
+
+.card-section .table-responsive {
+  overflow-x: visible; /* niente scrollbar orizzontale */
+}
+td.text-multiline {
+  white-space: pre-wrap;       /* preserva \n e va a capo */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+  max-width: 1px; /* necessario con table-layout: fixed per forzare wrapping */
+}
+.card-section table {
+  table-layout: fixed;
+  width: 100%;
 }

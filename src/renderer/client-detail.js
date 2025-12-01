@@ -90,7 +90,7 @@ function itDateString(s) {
 }
 function isAutoTitle(t) {
   const base = t?.date || t?.created_at;
-  const expected = `Scheda ${itDateString(base)}`;
+  const expected = `${itDateString(base)}`;
   return String(t?.title || '').trim() === expected;
 }
 
@@ -188,18 +188,36 @@ function renderTrainings(trainings = []) {
     const div = document.createElement('div');
     div.className = 'card';
     const createdAt = safeToLocale(t.created_at);
-    const displayTitle = t.title || createdAt || 'Scheda';
+    const displayTitle = t.title || createdAt || '';
 
     const sectionsHtml = groups.map(g => {
       const rows = g.fields
         .filter(([key]) => t[key] !== undefined && t[key] !== null && String(t[key]).trim() !== '')
         .map(([key, label]) => {
-          const value = formatWithUnit(key, t[key]);
-          const wrapClass = (key === 'Alimentazione' || key === 'Obbiettivo') ? ' class="text-wrap text-break"' : '';
+          let raw = formatWithUnit(key, t[key]);
+          // Campi multilinea: converti <,>,& e \n -> <br>
+          const multilineKeys = [
+            'Alimentazione','Obbiettivo','FrequenzaAllenamento',
+            'Infortuni','Patologie','EsperienzeSportive'
+          ];
+          const isMultiline = multilineKeys.includes(key);
+          if (isMultiline) {
+            raw = String(raw)
+              .replace(/&/g,'&amp;')
+              .replace(/</g,'&lt;')
+              .replace(/>/g,'&gt;')
+              .replace(/\r\n|\r|\n/g,'<br>');
+          } else {
+            raw = String(raw)
+              .replace(/&/g,'&amp;')
+              .replace(/</g,'&lt;')
+              .replace(/>/g,'&gt;');
+          }
+          const wrapClass = isMultiline ? ' class="text-multiline"' : '';
           return `
             <tr>
               <th scope="row">${label}</th>
-              <td${wrapClass}>${value}</td>
+              <td${wrapClass}>${raw}</td>
             </tr>
           `;
         })
@@ -444,7 +462,7 @@ form.addEventListener('submit', (e) => {
 });
 
 // =========================
-// SEZIONE: Test Cooper (modale) - versione con UN solo riposo finale
+// SEZIONE: Test Cooper (modale) - versione con TRE riposi finali
 // =========================
 const cooperRowsTbody = document.getElementById('cooper-rows-tbody');
 const cooperAddBtn = document.getElementById('cooper-add-btn');
@@ -491,34 +509,51 @@ function addCooperExerciseRow(initialHR) {
   });
   tr.children[4].appendChild(rm);
 
-  // Inserisci prima della riga riposo se esiste
-  const restRow = cooperRowsTbody.querySelector('tr[data-type="rest"]');
-  if (restRow) cooperRowsTbody.insertBefore(tr, restRow);
+  // Inserisci prima della prima riga di riposo (ora sono 3)
+  const firstRestRow = cooperRowsTbody.querySelector('tr[data-type="rest"]');
+  if (firstRestRow) cooperRowsTbody.insertBefore(tr, firstRestRow);
   else cooperRowsTbody.appendChild(tr);
 
-  ensureRestRow();
+  ensureRestRow(); // ora garantisce 3 righe di riposo
   renumberCooperRows();
 }
 
-function ensureRestRow(initialHR) {
+// Garantisce 3 righe "Riposo": "Riposo 1", "Riposo 2", "Riposo 3"
+// initialHRs può essere: undefined | number (compat) | number[3]
+function ensureRestRow(initialHRs) {
   if (!cooperRowsTbody) return;
-  let rest = cooperRowsTbody.querySelector('tr[data-type="rest"]');
-  if (!rest) {
-    rest = document.createElement('tr');
-    rest.dataset.type = 'rest';
-    rest.innerHTML = `
-      <td>Riposo</td>
+  // Rimuovi eventuali extra
+  let restRows = [...cooperRowsTbody.querySelectorAll('tr[data-type="rest"]')];
+  while (restRows.length > 3) {
+    restRows.pop().remove();
+  }
+  // Crea mancanti
+  for (let i = restRows.length; i < 3; i++) {
+    const tr = document.createElement('tr');
+    tr.dataset.type = 'rest';
+    tr.innerHTML = `
+      <td></td>
       <td>—</td>
       <td>—</td>
       <td></td>
       <td></td>
     `;
-    rest.children[3].appendChild(createHRInput(initialHR));
-    cooperRowsTbody.appendChild(rest);
-  } else if (initialHR !== undefined && Number.isFinite(initialHR)) {
-    const inp = rest.querySelector('input');
-    if (inp) inp.value = String(initialHR);
+    tr.children[3].appendChild(createHRInput());
+    cooperRowsTbody.appendChild(tr);
   }
+  // Aggiorna etichette e valori
+  restRows = [...cooperRowsTbody.querySelectorAll('tr[data-type="rest"]')];
+  restRows.forEach((tr, i) => {
+    tr.children[0].textContent = `Riposo ${i + 1}`;
+    const inp = tr.querySelector('input');
+    if (Array.isArray(initialHRs)) {
+      const v = initialHRs[i];
+      if (v !== undefined) inp.value = Number.isFinite(v) ? String(v) : '';
+    } else if (initialHRs !== undefined) {
+      // retrocompatibilità: singolo valore -> Riposo 1
+      inp.value = Number.isFinite(initialHRs) ? String(initialHRs) : '';
+    }
+  });
 }
 
 function hasExerciseRows() {
@@ -543,29 +578,37 @@ function getCooperHRs() {
       return Number.isFinite(n) ? n : null;
     })
     .filter(v => v !== null);
-  const restInp = cooperRowsTbody.querySelector('tr[data-type="rest"] input');
-  const restHR = restInp ? Number(restInp.value) : null;
-  const arr = exerciseHR.slice();
-  if (Number.isFinite(restHR)) arr.push(restHR);
-  return arr;
+
+  const restInputs = [...cooperRowsTbody.querySelectorAll('tr[data-type="rest"] input')].slice(0, 3);
+  const restHRs = restInputs.map(inp => {
+    const n = Number(inp.value);
+    return Number.isFinite(n) ? n : null; // mantieni slot con null se vuoto
+  });
+
+  return [...exerciseHR, ...restHRs];
 }
 
-// Array: [HR esercizio 1, HR esercizio 2, ..., HR esercizio N, HR riposo finale]
+// Array: [HR esercizio 1, ..., HR esercizio N, HR riposo 1, HR riposo 2, HR riposo 3]
 function setCooperHRs(arr = []) {
   if (!cooperRowsTbody) return;
   cooperRowsTbody.innerHTML = '';
+
   const list = Array.isArray(arr) ? arr : [];
-  if (list.length === 0) {
-    addCooperExerciseRow();
-    ensureRestRow();
-  } else {
-    // Ultimo valore = riposo
-    const restValue = list[list.length - 1];
-    const exerciseValues = list.slice(0, -1);
-    if (exerciseValues.length === 0) exerciseValues.push(undefined);
-    exerciseValues.forEach(v => addCooperExerciseRow(v));
-    ensureRestRow(restValue);
+  const len = list.length;
+
+  const exerciseValues = len > 3 ? list.slice(0, -3) : [];
+  const restSlice = len >= 1 ? list.slice(-3) : [];
+  const restValues = [undefined, undefined, undefined];
+  for (let i = 0; i < restSlice.length; i++) {
+    restValues[i] = restSlice[i];
   }
+
+  if (exerciseValues.length === 0) {
+    addCooperExerciseRow();
+  } else {
+    exerciseValues.forEach(v => addCooperExerciseRow(v));
+  }
+  ensureRestRow(restValues);
   renumberCooperRows();
 }
 
@@ -576,18 +619,27 @@ document.addEventListener('DOMContentLoaded', () => {
   if (cooperRowsTbody && cooperRowsTbody.children.length === 0) setCooperHRs([]);
 });
 
-// Rendering in card (interpreta ultimo elemento come riposo)
+// Rendering in card (interpreta ultimi 3 elementi come riposi)
 function cooperTableHtmlFromJSON(cooperJson) {
   let arr = [];
   try { arr = JSON.parse(cooperJson || '[]'); } catch { arr = []; }
   if (!Array.isArray(arr) || arr.length === 0) return '';
-  const restHR = arr.length > 1 ? arr[arr.length - 1] : null;
-  const exerciseHR = restHR !== null ? arr.slice(0, -1) : arr;
-  const rows = exerciseHR.map((hr, i) => {
+
+  const restValues = arr.length >= 3 ? arr.slice(-3) : [];
+  const exerciseHR = arr.length > 3 ? arr.slice(0, -3) : [];
+
+  const exerciseRows = exerciseHR.map((hr, i) => {
     return `<tr><td>${i + 1}</td><td>${cooperSpeedAt(i).toFixed(1)} Km/h</td><td>${cooperTimeAt(i)} min</td><td>${hr} bpm</td></tr>`;
-  }).join('') + (Number.isFinite(restHR)
-    ? `<tr><td>Riposo</td><td>—</td><td>—</td><td>${restHR} bpm</td></tr>`
-    : '');
+  }).join('');
+
+  const restRows = restValues.map((hr, i) => {
+    if (!Number.isFinite(hr)) return '';
+    return `<tr><td>Riposo ${i + 1}</td><td>—</td><td>—</td><td>${hr} bpm</td></tr>`;
+  }).join('');
+
+  const rows = `${exerciseRows}${restRows}`;
+  if (!rows) return '';
+
   return `
     <div class="card-section">
       <div class="card-section-title">Test Cooper</div>
@@ -603,4 +655,24 @@ function cooperTableHtmlFromJSON(cooperJson) {
       </div>
     </div>
   `;
+}
+
+function renderTraining(t) {
+  const card = document.createElement('div');
+  card.className = 'training-card';
+
+  const alimentazioneEl = document.createElement('div');
+  alimentazioneEl.className = 'training-text';
+  alimentazioneEl.textContent = t.alimentazione || '';
+
+  const obiettivoEl = document.createElement('div');
+  obiettivoEl.className = 'training-text';
+  obiettivoEl.textContent = t.obiettivo || '';
+
+  // aggiungi gli altri campi textarea allo stesso modo...
+
+  card.appendChild(alimentazioneEl);
+  card.appendChild(obiettivoEl);
+  // ...append altri campi
+  return card;
 }

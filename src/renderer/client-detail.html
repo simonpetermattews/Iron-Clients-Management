@@ -17,9 +17,10 @@
         class="text-accent d-inline-flex align-items-center gap-1 text-decoration-none">←
         Torna all’elenco</a>
       <h1 id="client-name" class="mt-2 mb-1">Cliente</h1>
-      <div class="muted" id="client-meta"></div>
-      <div class="muted" id="client-dob"></div>
-      <p><strong>Data di nascita:</strong> <span id="client-birth-date"></span></p>
+      <!-- <div class="text-text" id="client-meta"></div> -->
+      <p><strong class="text-brand">Telefono: </strong><span id="client-meta"></span></p>
+      <!-- <div class="muted" id="client-dob"></div> -->
+      <p><strong class="text-brand">Data di nascita: </strong> <span id="client-birth-date"></span></p>
 
       <div
         class="col-12 d-flex justify-content-center align-items-center">
@@ -30,11 +31,11 @@
       <div id="training-modal" class="modal" aria-hidden="true">
         <div class="modal-content" role="dialog" aria-modal="true"
           aria-labelledby="modal-title">
-          <button id="training-modal-close" class="modal-close"
-            aria-label="Chiudi">×</button>
-          <h2 id="modal-title">Nuova scheda allenamento</h2>
-          <form id="training-form" class="row g-3">
-            <div class="col-12"><h3 class="section-title h5">Dati Anagrafici</h3></div>
+          <button id="training-modal-close" class="modal-close bg-danger"
+            aria-label="Chiudi">Chiudi</button>
+            <form id="training-form" class="row g-3">
+            <h2 class="text-brand" id="modal-title">Nuova scheda allenamento</h2>
+            <div class="col-12"><h3 class="section-title text-accent h5">Dati Anagrafici</h3></div>
 
             <!-- Nuovi campi titolo/data scheda -->
             <div class="col-12 col-md-6">
